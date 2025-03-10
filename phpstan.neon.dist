@@ -1,6 +1,7 @@
 parameters:
   level: 6
   paths:
+    - ./fewer-tags.php
     - ./src
   checkGenericClassInNonGenericObjectType: false
   ignoreErrors:
