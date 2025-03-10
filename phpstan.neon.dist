@@ -1,10 +1,8 @@
 parameters:
   level: 6
   paths:
-    - .
-  excludePaths:
-    - vendor
-    - tests
+    - ./fewer-tags.php
+    - ./src
   checkGenericClassInNonGenericObjectType: false
   ignoreErrors:
     - '#Method [a-zA-Z0-9\\_\:\(\)]+ return type has no value type specified in iterable type array.#'
