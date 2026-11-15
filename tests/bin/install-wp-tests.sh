@@ -5,6 +5,28 @@ if [ $# -lt 3 ]; then
 	exit 1
 fi
 
+# Function to check if a command exists
+command_exists() {
+	command -v "$1" >/dev/null 2>&1
+}
+# Check if SVN is installed
+if command_exists svn; then
+	echo "SVN is already installed."
+else
+	echo "SVN is not installed. Installing SVN..."
+	# Update the package list
+	sudo apt-get update -y
+	# Install SVN
+	sudo apt-get install -y subversion
+	# Verify installation
+	if command_exists svn; then
+		echo "SVN was successfully installed."
+	else
+		echo "Failed to install SVN. Please check your system configuration."
+		exit 1
+	fi
+fi
+
 DB_NAME=$1
 DB_USER=$2
 DB_PASS=$3
@@ -19,7 +41,7 @@ WP_CORE_DIR=${WP_CORE_DIR-$TMPDIR/wordpress}
 
 download() {
     if [ `which curl` ]; then
-        curl -s "$1" > "$2";
+        curl -sL "$1" > "$2";
     elif [ `which wget` ]; then
         wget -nv -O "$2" "$1"
     fi
@@ -108,8 +130,30 @@ install_test_suite() {
 		# set up testing suite
 		mkdir -p $WP_TESTS_DIR
 		rm -rf $WP_TESTS_DIR/{includes,data}
-		svn export --ignore-externals https://develop.svn.wordpress.org/${WP_TESTS_TAG}/tests/phpunit/includes/ $WP_TESTS_DIR/includes
-		svn export --ignore-externals https://develop.svn.wordpress.org/${WP_TESTS_TAG}/tests/phpunit/data/ $WP_TESTS_DIR/data
+
+		# Use GitHub zip downloads instead of svn export.
+		local GITHUB_TAG=${WP_TESTS_TAG#tags/}
+		local GITHUB_TAG=${GITHUB_TAG#branches/}
+		local WP_TESTS_ZIP_URL=""
+		# Try as a tag first (most common for versioned releases), then as a branch.
+		for ref_type in tags heads; do
+			local test_url="https://github.com/WordPress/wordpress-develop/archive/refs/${ref_type}/${GITHUB_TAG}.zip"
+			local http_code=$(curl -sL -o /dev/null -w "%{http_code}" "$test_url")
+			if [ "$http_code" = "200" ]; then
+				WP_TESTS_ZIP_URL="$test_url"
+				break
+			fi
+		done
+		if [ -z "$WP_TESTS_ZIP_URL" ]; then
+			echo "Could not find WordPress test suite for version ${GITHUB_TAG}"
+			exit 1
+		fi
+		download "$WP_TESTS_ZIP_URL" "$TMPDIR/wp-tests.zip"
+		unzip -q -o "$TMPDIR/wp-tests.zip" -d "$TMPDIR/wp-tests"
+		local WP_TESTS_EXTRACTED_DIR=$(find "$TMPDIR/wp-tests" -maxdepth 1 -mindepth 1 -type d | head -1)
+		cp -r "${WP_TESTS_EXTRACTED_DIR}/tests/phpunit/includes" "$WP_TESTS_DIR/includes"
+		cp -r "${WP_TESTS_EXTRACTED_DIR}/tests/phpunit/data" "$WP_TESTS_DIR/data"
+		rm -rf "$TMPDIR/wp-tests" "$TMPDIR/wp-tests.zip"
 	fi
 
 	if [ ! -f wp-tests-config.php ]; then
