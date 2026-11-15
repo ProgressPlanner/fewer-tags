@@ -127,16 +127,16 @@
         },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
-            "version": "v1.2.0",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/composer-installer.git",
-                "reference": "845eb62303d2ca9b289ef216356568ccc075ffd1"
+                "reference": "963f0c67bffde0eac41b56be71ac0e8ba132f0bd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/composer-installer/zipball/845eb62303d2ca9b289ef216356568ccc075ffd1",
-                "reference": "845eb62303d2ca9b289ef216356568ccc075ffd1",
+                "url": "https://api.github.com/repos/PHPCSStandards/composer-installer/zipball/963f0c67bffde0eac41b56be71ac0e8ba132f0bd",
+                "reference": "963f0c67bffde0eac41b56be71ac0e8ba132f0bd",
                 "shasum": ""
             },
             "require": {
@@ -219,7 +219,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2025-11-11T04:32:07+00:00"
+            "time": "2026-05-06T08:26:05+00:00"
         },
         {
             "name": "doctrine/instantiator",
@@ -995,18 +995,18 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHPCSExtra.git",
-                "reference": "85b0130b8cc8c570c2ae1fb5eb0eb22f8b55f7af"
+                "reference": "8b00bbfbd82fd678b09f29c21af9f4cb3b6d292f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSExtra/zipball/85b0130b8cc8c570c2ae1fb5eb0eb22f8b55f7af",
-                "reference": "85b0130b8cc8c570c2ae1fb5eb0eb22f8b55f7af",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSExtra/zipball/8b00bbfbd82fd678b09f29c21af9f4cb3b6d292f",
+                "reference": "8b00bbfbd82fd678b09f29c21af9f4cb3b6d292f",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.4",
-                "phpcsstandards/phpcsutils": "^1.2.0",
-                "squizlabs/php_codesniffer": "^3.13.5 || ^4.0.1"
+                "phpcsstandards/phpcsutils": "^1.2.3",
+                "squizlabs/php_codesniffer": "^3.13.6 || ^4.0.2"
             },
             "require-dev": {
                 "php-parallel-lint/php-console-highlighter": "^1.0",
@@ -1070,7 +1070,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2026-03-06T01:09:19+00:00"
+            "time": "2026-11-06T18:21:54+00:00"
         },
         {
             "name": "phpcsstandards/phpcsutils",
@@ -1078,18 +1078,18 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHPCSUtils.git",
-                "reference": "8082141d724d3d72a2d4cc677268a1321abdff00"
+                "reference": "b008482a2fae22ced43cac745a185580c1e7c44d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSUtils/zipball/8082141d724d3d72a2d4cc677268a1321abdff00",
-                "reference": "8082141d724d3d72a2d4cc677268a1321abdff00",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSUtils/zipball/b008482a2fae22ced43cac745a185580c1e7c44d",
+                "reference": "b008482a2fae22ced43cac745a185580c1e7c44d",
                 "shasum": ""
             },
             "require": {
                 "dealerdirect/phpcodesniffer-composer-installer": "^0.4.1 || ^0.5 || ^0.6.2 || ^0.7 || ^1.0",
                 "php": ">=5.4",
-                "squizlabs/php_codesniffer": "^3.13.5 || ^4.0.1"
+                "squizlabs/php_codesniffer": "^3.13.6 || ^4.0.2"
             },
             "require-dev": {
                 "ext-filter": "*",
@@ -1164,7 +1164,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2026-03-06T01:47:45+00:00"
+            "time": "2026-11-05T22:54:26+00:00"
         },
         {
             "name": "phpstan/extension-installer",
@@ -2713,12 +2713,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHP_CodeSniffer.git",
-                "reference": "101786698b7686dc5c26aafe941e4791dbe0efee"
+                "reference": "4682ac59887211d071b204054f6ba060c04b6a09"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/101786698b7686dc5c26aafe941e4791dbe0efee",
-                "reference": "101786698b7686dc5c26aafe941e4791dbe0efee",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/4682ac59887211d071b204054f6ba060c04b6a09",
+                "reference": "4682ac59887211d071b204054f6ba060c04b6a09",
                 "shasum": ""
             },
             "require": {
@@ -2784,7 +2784,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2026-03-07T04:19:43+00:00"
+            "time": "2026-08-20T23:49:49+00:00"
         },
         {
             "name": "szepeviktor/phpstan-wordpress",
@@ -2902,16 +2902,16 @@
         },
         {
             "name": "wp-coding-standards/wpcs",
-            "version": "3.3.0",
+            "version": "3.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/WordPress/WordPress-Coding-Standards.git",
-                "reference": "7795ec6fa05663d716a549d0b44e47ffc8b0d4a6"
+                "reference": "ec2ff942335f33683a5957a85d138753876a05cf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/WordPress/WordPress-Coding-Standards/zipball/7795ec6fa05663d716a549d0b44e47ffc8b0d4a6",
-                "reference": "7795ec6fa05663d716a549d0b44e47ffc8b0d4a6",
+                "url": "https://api.github.com/repos/WordPress/WordPress-Coding-Standards/zipball/ec2ff942335f33683a5957a85d138753876a05cf",
+                "reference": "ec2ff942335f33683a5957a85d138753876a05cf",
                 "shasum": ""
             },
             "require": {
@@ -2920,9 +2920,9 @@
                 "ext-tokenizer": "*",
                 "ext-xmlreader": "*",
                 "php": ">=7.2",
-                "phpcsstandards/phpcsextra": "^1.5.0",
-                "phpcsstandards/phpcsutils": "^1.1.0",
-                "squizlabs/php_codesniffer": "^3.13.4"
+                "phpcsstandards/phpcsextra": "^1.5.1",
+                "phpcsstandards/phpcsutils": "^1.2.3",
+                "squizlabs/php_codesniffer": "^3.13.5"
             },
             "require-dev": {
                 "php-parallel-lint/php-console-highlighter": "^1.0.0",
@@ -2964,7 +2964,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2025-11-25T12:08:04+00:00"
+            "time": "2026-07-27T11:53:23+00:00"
         },
         {
             "name": "yoast/phpunit-polyfills",
