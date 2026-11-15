@@ -47,7 +47,14 @@ class Admin {
 			'fewer_tags_section'
 		);
 
-		\register_setting( 'reading', Plugin::$option_name );
+		\register_setting(
+			'reading',
+			Plugin::$option_name,
+			[
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+			]
+		);
 	}
 
 	/**
