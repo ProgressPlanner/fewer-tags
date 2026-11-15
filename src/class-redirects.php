@@ -35,16 +35,17 @@ class Redirects {
 	 * @return boolean Whether the redirect was created successfully.
 	 */
 	public function create_redirect_from_slug( $slug, $taxonomy, $target_url ) {
-		$terms_to_redirect = $this->options->get( 'terms_to_redirect' );
-		if ( ! isset( $terms_to_redirect[ $taxonomy ][ $slug ] ) ) {
+		$term = Helper::get_term_to_redirect( $taxonomy, $slug );
+		if ( null === $term || '' === $term['permalink'] ) {
 			return false;
 		}
 
-		$response = $this->create_redirect( $terms_to_redirect[ $taxonomy ][ $slug ]['permalink'], $target_url );
+		$response = $this->create_redirect( $term['permalink'], $target_url );
 		if ( ! $response ) {
 			return false;
 		}
 
+		$terms_to_redirect = $this->options->get( 'terms_to_redirect' );
 		unset( $terms_to_redirect[ $taxonomy ][ $slug ] );
 		$this->options->set( 'terms_to_redirect', $terms_to_redirect );
 		return true;
