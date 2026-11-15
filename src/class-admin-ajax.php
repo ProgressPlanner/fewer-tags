@@ -393,13 +393,15 @@ class Admin_Ajax {
 		}
 
 		if ( '/' === $target[0] ) {
-			// Protocol-relative URLs ("//example.com", "/\example.com") point to another site, so don't accept those as paths.
-			if ( isset( $target[1] ) && ( '/' === $target[1] || '\\' === $target[1] ) ) {
-				return $error;
-			}
+			// Sanitize first: that can remove characters, and we need to judge what is left.
 			$target = \esc_url_raw( $target );
 
-			return ( '' === $target || '/' !== $target[0] ) ? $error : $target;
+			// Protocol-relative URLs ("//example.com", "/\example.com") point to another site, so don't accept those as paths.
+			if ( '' === $target || '/' !== $target[0] || ( isset( $target[1] ) && ( '/' === $target[1] || '\\' === $target[1] ) ) ) {
+				return $error;
+			}
+
+			return $target;
 		}
 
 		$target = \esc_url_raw( $target, [ 'http', 'https' ] );

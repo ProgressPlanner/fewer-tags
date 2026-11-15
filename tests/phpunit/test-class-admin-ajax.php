@@ -283,10 +283,50 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 		return [
 			[ 'https://evil.example/' ],
 			[ '//evil.example/' ],
-			[ '/\\evil.example/' ],
 			[ 'javascript:alert(1)' ],
 			[ 'evil.example' ],
 			[ '' ],
+		];
+	}
+
+	/**
+	 * Whatever sanitizing does to a path, the result never points to another site.
+	 *
+	 * @dataProvider data_tricky_paths
+	 *
+	 * @param string $target The redirect target.
+	 */
+	public function test_sanitized_path_never_points_to_another_site( $target ) {
+		$method = new \ReflectionMethod( Admin_Ajax::class, 'sanitize_redirect_target' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( new Admin_Ajax(), $target );
+
+		if ( is_wp_error( $result ) ) {
+			$this->assertSame( 'fewer_tags_invalid_target', $result->get_error_code() );
+			return;
+		}
+		$this->assertMatchesRegularExpression( '#^/(?![/\\\\])#', $result );
+	}
+
+	/**
+	 * Data provider.
+	 *
+	 * @return array[]
+	 */
+	public function data_tricky_paths() {
+		return [
+			[ '//evil.example/' ],
+			[ '/\\evil.example/' ],
+			[ '/^/evil.example/' ],
+			[ "/\t/evil.example/" ],
+			[ "/\n/evil.example/" ],
+			[ '/%0a/evil.example/' ],
+			[ '/%00/evil.example/' ],
+			[ '/%0d%0a\\evil.example/' ],
+			[ '/^\\evil.example/' ],
+			[ '/ /evil.example/' ],
+			[ '/<b>/evil.example/' ],
 		];
 	}
 
