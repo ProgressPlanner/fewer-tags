@@ -52,9 +52,23 @@ class Admin {
 			Plugin::$option_name,
 			[
 				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
+				'sanitize_callback' => [ $this, 'sanitize_setting' ],
 			]
 		);
+	}
+
+	/**
+	 * Sanitize the minimum posts count setting.
+	 *
+	 * Negative values are clamped to 0 rather than made positive, so they keep
+	 * meaning "off", as they did before the setting was sanitized.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return int The sanitized value, 0 or higher.
+	 */
+	public function sanitize_setting( $value ) {
+		return \max( 0, (int) $value );
 	}
 
 	/**

@@ -90,6 +90,21 @@ class Admin_Test extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests that the setting is sanitized through register_setting().
+	 *
+	 * @covers FewerTags\Admin::sanitize_setting
+	 */
+	public function test_sanitize_setting() {
+		self::$class_instance->register_settings();
+
+		$this->assertSame( 5, sanitize_option( Plugin::$option_name, '5' ) );
+		$this->assertSame( 0, sanitize_option( Plugin::$option_name, '0' ) );
+		$this->assertSame( 0, sanitize_option( Plugin::$option_name, '' ) );
+		$this->assertSame( 0, sanitize_option( Plugin::$option_name, '-5' ) );
+		$this->assertSame( 0, sanitize_option( Plugin::$option_name, 'abc' ) );
+	}
+
+	/**
 	 * Tests display section.
 	 *
 	 * @covers FewerTags\Admin::display_section
