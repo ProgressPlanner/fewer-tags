@@ -90,6 +90,41 @@ class Admin_Test extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Tests that the setting is sanitized through register_setting().
+	 *
+	 * @covers FewerTags\Admin::sanitize_setting
+	 */
+	public function test_sanitize_setting() {
+		$redirects = [
+			'post_tag' => [
+				'old-tag' => [
+					'name'      => 'Old tag',
+					'permalink' => home_url( '/tag/old-tag/' ),
+				],
+			],
+		];
+		update_option(
+			'fewer_tags',
+			[
+				'min_posts_count'   => 10,
+				'terms_to_redirect' => $redirects,
+			]
+		);
+		self::$class_instance->register_settings();
+		foreach ( [
+			'5'   => 5,
+			'0'   => 0,
+			''    => 0,
+			'-5'  => 0,
+			'abc' => 0,
+		] as $value => $expected ) {
+			$sanitized = sanitize_option( 'fewer_tags', [ 'min_posts_count' => (string) $value ] );
+			$this->assertSame( $expected, $sanitized['min_posts_count'] );
+			$this->assertSame( $redirects, $sanitized['terms_to_redirect'] );
+		}
+	}
+
+	/**
 	 * Tests display section.
 	 *
 	 * @covers FewerTags\Admin::display_section
@@ -115,7 +150,7 @@ class Admin_Test extends \WP_UnitTestCase {
 		$this->assertStringContainsString( 'name="fewer_tags[min_posts_count]"', $output );
 		$this->assertStringContainsString( 'id="fewer_tags_min_posts_count"', $output );
 		$this->assertStringContainsString( 'type="number"', $output );
-		$this->assertStringContainsString( 'min="1"', $output );
+		$this->assertStringContainsString( 'min="0"', $output );
 		$this->assertStringContainsString( 'value="5"', $output ); // This is tied to the value of Plugin::$min_posts_count.
 		$this->assertStringContainsString( 'class="small-text"', $output );
 		$this->assertStringContainsString( 'posts before being live on the site.', $output );

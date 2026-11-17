@@ -76,7 +76,7 @@ class Admin {
 			name="fewer_tags[min_posts_count]"
 			id="fewer_tags_min_posts_count"
 			type="number"
-			min="1"
+			min="0"
 			value="<?php echo (int) Plugin::$min_posts_count; ?>"
 			class="small-text"
 		/>
@@ -100,10 +100,8 @@ class Admin {
 			$current = [];
 		}
 
-		$min_posts_count = isset( $input['min_posts_count'] ) ? (int) $input['min_posts_count'] : 10;
-		if ( $min_posts_count < 1 ) {
-			$min_posts_count = 1;
-		}
+		// Preserve the previous "off" behavior for zero and negative values.
+		$min_posts_count = isset( $input['min_posts_count'] ) ? max( 0, (int) $input['min_posts_count'] ) : 10;
 
 		$current['min_posts_count'] = $min_posts_count;
 
