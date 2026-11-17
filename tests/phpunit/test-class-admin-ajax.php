@@ -501,6 +501,33 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 	}
 
 	/**
+	 * Merge redirects retain the query that identifies an archive with plain permalinks.
+	 */
+	public function test_relative_merge_url_preserves_query() {
+		$method = new \ReflectionMethod( Admin_Ajax::class, 'make_relative_url' );
+		$method->setAccessible( true );
+		$handler = new Admin_Ajax();
+
+		$this->assertSame( '/subsite/?tag=source', $method->invoke( $handler, 'https://example.org/subsite/?tag=source' ) );
+		$this->assertSame( '/subsite/?cat=123', $method->invoke( $handler, 'https://example.org/subsite/?cat=123' ) );
+		$this->assertSame( '/subsite/tag/source/', $method->invoke( $handler, 'https://example.org/subsite/tag/source/' ) );
+	}
+
+	/**
+	 * Homepage redirect offers include the WordPress site's subdirectory.
+	 */
+	public function test_redirect_notice_uses_site_homepage() {
+		if ( ! defined( 'REDIRECTION_DB_VERSION' ) ) {
+			define( 'REDIRECTION_DB_VERSION', '1' );
+		}
+		update_option( 'home', 'http://example.org/subsite' );
+		$slug   = $this->store_term_to_redirect();
+		$notice = Helper::redirect_term_notice( $slug, 'Gone', 'post_tag' );
+
+		$this->assertStringContainsString( 'data-target="http://example.org/subsite/"', $notice );
+	}
+
+	/**
 	 * Entries stored by older versions, with a WP_Term object, can still be read.
 	 */
 	public function test_legacy_term_object_entries_are_read() {

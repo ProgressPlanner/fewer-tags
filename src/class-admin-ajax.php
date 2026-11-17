@@ -453,12 +453,6 @@ class Admin_Ajax {
 	 * @return string The relative URL.
 	 */
 	private function make_relative_url( $url ) {
-		if ( strpos( $url, 'http' ) === 0 ) {
-			$url_parts = \wp_parse_url( $url );
-			if ( is_array( $url_parts ) && isset( $url_parts['path'] ) ) {
-				return $url_parts['path'];
-			}
-		}
-		return $url;
+		return \wp_make_link_relative( $url );
 	}
 }

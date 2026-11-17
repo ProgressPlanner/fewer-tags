@@ -170,7 +170,7 @@ class Helper {
 		$attributes = ' data-slug="' . \esc_attr( $slug ) . '" data-taxonomy="' . \esc_attr( $taxonomy ) . '" data-nonce="' . \esc_attr( \wp_create_nonce( 'fewer_tags_redirect_url' ) ) . '"';
 
 		$msg .= '<ul>';
-		$msg .= '<li style="list-style-type: disc; margin-left: 15px;"><button type="button" class="button-link fewer-tags-redirect-action"' . $attributes . ' data-target="/">' . \esc_html__( 'Redirect to homepage', 'fewer-tags' ) . '</button></li>';
+		$msg .= '<li style="list-style-type: disc; margin-left: 15px;"><button type="button" class="button-link fewer-tags-redirect-action"' . $attributes . ' data-target="' . \esc_attr( \home_url( '/' ) ) . '">' . \esc_html__( 'Redirect to homepage', 'fewer-tags' ) . '</button></li>';
 		$msg .= '<li style="list-style-type: disc; margin-left: 15px;"><button type="button" class="button-link fewer-tags-redirect-action"' . $attributes . ' data-prompt="' . \esc_attr__( 'Where should the page redirect to?', 'fewer-tags' ) . '">' . \esc_html__( 'Redirect to another URL', 'fewer-tags' ) . '</button></li>';
 		$msg .= '</ul>';
 
