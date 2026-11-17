@@ -196,7 +196,7 @@ document.addEventListener( 'click', ( event ) => {
 } );
 
 async function fewerTagsGetTaxonomies( currentTaxonomy ) {
-	const apiUrl = '/wp-json/wp/v2/taxonomies?context=edit';
+	const apiUrl = fewerTags.taxonomiesUrl;
 
 	try {
 		const response = await fetch( apiUrl, {
@@ -219,7 +219,6 @@ async function fewerTagsGetTaxonomies( currentTaxonomy ) {
 				selected: ( taxonomies[ key ].slug === currentTaxonomy ),
 				customProperties: {
 					post_type: taxonomies[ key ].types,
-					rest_base: taxonomies[ key ].rest_base,
 				},
 			} ) );
 
@@ -236,33 +235,28 @@ let FTterms = [];
  * Get all terms from the WordPress REST API.
  *
  * @param {string} taxonomy The taxonomy to get the terms for.
- * @param {string} restBase Optional REST base for the taxonomy endpoint.
  *
  * @return {Promise} The promise of the terms.
  */
-async function fewerTagsGetAllTerms( taxonomy, restBase ) {
+async function fewerTagsGetAllTerms( taxonomy ) {
 	const retrievedTerms = [];
 	const perPage = 100; // Max allowed by WP REST API
 	let page = 1;
 	let hasMore = true;
 	const termsOutput = [];
 
-	let endpoint = '';
-	if ( restBase ) {
-		endpoint = `/wp-json/wp/v2/${ restBase }`;
-	} else if ( taxonomy === 'post_tag' ) {
-		endpoint = `/wp-json/wp/v2/tags`;
-	} else if ( taxonomy === 'category' ) {
-		endpoint = `/wp-json/wp/v2/categories`;
-	} else {
-		endpoint = `/wp-json/wp/v2/${ taxonomy }`;
+	const endpoint = fewerTags.termUrls[ taxonomy ];
+	if ( ! endpoint ) {
+		return termsOutput;
 	}
 
 	while ( hasMore ) {
-		const apiUrl = `${ endpoint }?per_page=${ perPage }&page=${ page }`;
+		const apiUrl = new URL( endpoint );
+		apiUrl.searchParams.set( 'per_page', perPage );
+		apiUrl.searchParams.set( 'page', page );
 
 		try {
-			const response = await fetch( apiUrl );
+			const response = await fetch( apiUrl.toString() );
 			if ( ! response.ok ) {
 				throw new Error( `Network response was not ok (Status: ${ response.status })` );
 			}
@@ -399,9 +393,7 @@ fewerTagsDomReady( () => {
 
 	FTtaxonomyElement.addEventListener( 'change', ( event ) => {
 		const targetTaxonomy = event.target.value;
-		const selectedTaxonomy = FTtaxonomies.find( ( t ) => t.value === targetTaxonomy );
-		const restBase = selectedTaxonomy && selectedTaxonomy.customProperties ? selectedTaxonomy.customProperties.rest_base : '';
-		fewerTagsGetAllTerms( targetTaxonomy, restBase ).then( ( terms ) => {
+		fewerTagsGetAllTerms( targetTaxonomy ).then( ( terms ) => {
 			FTterms = terms;
 			FTchoices.setChoices( FTterms, 'value', 'label', true );
 			document.getElementById( 'fewer-tags-target-term-label' ).textContent = 'Target ' + targetTaxonomy;

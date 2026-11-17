@@ -171,7 +171,13 @@ class Plugin {
 		if ( ! $this->is_terms_screen() ) {
 			return;
 		}
-		$taxonomy = \get_current_screen()->taxonomy;
+		$taxonomy  = \get_current_screen()->taxonomy;
+		$term_urls = [];
+		foreach ( \get_taxonomies( [ 'show_in_rest' => true ], 'objects' ) as $rest_taxonomy ) {
+			$namespace                         = ! empty( $rest_taxonomy->rest_namespace ) ? $rest_taxonomy->rest_namespace : 'wp/v2';
+			$rest_base                         = ! empty( $rest_taxonomy->rest_base ) ? $rest_taxonomy->rest_base : $rest_taxonomy->name;
+			$term_urls[ $rest_taxonomy->name ] = \rest_url( $namespace . '/' . $rest_base );
+		}
 		\add_thickbox();
 		\wp_enqueue_style( 'fewer-tags-choices', \plugins_url( 'js/vendor/choices.min.css', FEWER_TAGS_FILE ), [], '10.2.0' );
 		\wp_add_inline_style(
@@ -247,10 +253,12 @@ class Plugin {
 					'deleteTermNonce' => \wp_create_nonce( 'fewer_tags_just_deleted_term' ),
 					'dismissText'     => __( 'Dismiss this notice.', 'fewer-tags' ),
 					'restAPInonce'    => \wp_create_nonce( 'wp_rest' ),
+					'taxonomiesUrl'   => \add_query_arg( 'context', 'edit', \rest_url( 'wp/v2/taxonomies' ) ),
+					'termUrls'        => $term_urls,
 					'defaultTermId'   => (int) \get_option( 'default_' . $taxonomy, 0 ),
 				]
 			),
-			'after'
+			'before'
 		);
 	}
 
