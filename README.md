@@ -29,8 +29,8 @@ The default threshold is 10 posts, and you can change it under **Settings → Re
 
 ## Merging and redirects
 
-- Merge any tag, category, or custom taxonomy term into another — even across taxonomies. All posts from the source term are moved to the target term, and a 301 redirect is created from the old term archive to the new one.
-- When you delete a term, Fewer Tags prompts you to create a redirect to the homepage or any other URL.
+- Merge tags, categories, and public custom taxonomy terms when you have permission to manage them. Cross-taxonomy merges require all affected content to support the target taxonomy. The target term is added to the source term’s posts, and the source term is removed. A 301 redirect is created when Redirection or Yoast SEO Premium is active.
+- When you delete a term, Fewer Tags prompts you to create a redirect to the homepage or another URL. External destinations require administrator permissions.
 - Redirects are created via the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
 
 ## Why use it?
@@ -52,7 +52,7 @@ Fewer Tags gives you a simple way to keep useful tag archives while suppressing 
 2. Activate the plugin.
 3. Go to **Settings → Reading**.
 4. Choose how many posts a tag needs before it becomes live on your site.
-5. For the merge and redirect-on-delete features, install and activate the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
+5. To create redirects after merging or deleting terms, install and activate the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
 
 ## FAQ
 

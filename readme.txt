@@ -2,7 +2,7 @@
 Contributors: joostdevalk, aristath, filipi, progressplanner
 Tags: seo, tags, taxonomy, sitemap, archives
 Requires at least: 6.2
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.0
 License: GPL-3.0-or-later
@@ -32,13 +32,13 @@ This helps reduce crawl waste while keeping stronger tag archives available.
 
 == Merge terms ==
 
-* Merge any tag, category, or custom taxonomy term into another — even across taxonomies.
+* Merge tags, categories, and public custom taxonomy terms when you have permission to manage them. Cross-taxonomy merges require all affected content to support the target taxonomy.
 * All posts from the source term are moved to the target term.
-* A 301 redirect is automatically created from the old term archive to the new one.
+* A 301 redirect is created from the old term archive to the new one when Redirection or Yoast SEO Premium is active.
 
 == Redirect on delete ==
 
-* When you delete a term, Fewer Tags prompts you to create a redirect to the homepage or any other URL.
+* When you delete a term, Fewer Tags prompts you to create a redirect to the homepage or another URL. External destinations require administrator permissions.
 * Redirects are created via the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
 
 == Why site owners use Fewer Tags ==
@@ -61,7 +61,7 @@ You can learn more about Fewer Tags on [progressplanner.com](https://progresspla
 2. Activate the plugin.
 3. Go to Settings → Reading.
 4. Set the minimum number of posts a tag needs before it becomes live on your site.
-5. For the merge and redirect-on-delete features, install and activate the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
+5. To create redirects after merging or deleting terms, install and activate the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
 6. Save your changes.
 
 == Frequently Asked Questions ==
@@ -76,7 +76,7 @@ Usually no. Tag archives can still be useful when they collect enough related co
 
 = Where do I change the minimum number of posts for a tag? =
 
-Go to Settings → Reading in your WordPress admin and adjust the minimum post count there.
+Go to Settings → Reading in your WordPress admin and adjust the minimum post count there. Set it to 0 to keep all tag archives live.
 
 = Which sitemap plugins are supported? =
 
@@ -104,10 +104,20 @@ Major release: all Fewer Tags Pro functionality is now included in the free plug
 
 New features:
 
-* Merge terms — merge any tag, category, or custom taxonomy term into another, including cross-taxonomy merges.
-* Redirect on delete — when you delete a term, get prompted to create a redirect to the homepage or any other URL.
+* Merge tags, categories, and supported custom taxonomy terms, including cross-taxonomy merges.
+* Redirect on delete — when you delete a term, get prompted to create a redirect to the homepage or another URL. External destinations require administrator permissions.
 * Redirect creation via Redirection plugin or Yoast SEO Premium.
 * Admin notice when neither Redirection nor Yoast SEO Premium is installed, with install/activate buttons.
+
+Fixes and safeguards:
+
+* Preserve existing settings and pending redirect offers when upgrading.
+* Keep the tag threshold disabled when saving zero or negative values.
+* Validate taxonomy permissions and reject self-merges or incompatible content before changing assignments.
+* Restrict external redirects to administrators and escape merge and redirect controls.
+* Support subdirectory installations and plain permalinks in the merge interface and preserve archive query strings in redirects.
+* Send homepage redirects to the correct WordPress site URL, including installations in a subdirectory.
+* Report redirect failures accurately when no supported redirect plugin is active.
 
 = 1.5.1 =
 * Fix: Prevent incorrect `keywords` output types in Yoast SEO schema in one edge case.
