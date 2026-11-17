@@ -18,6 +18,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -67,3 +70,7 @@ jobs:
 
       - name: Lint blueprint file
         run: composer lint-blueprint
+
+      - name: Test REST URL handling
+        if: matrix.php_version == '8.2'
+        run: node --test tests/js/*.test.cjs

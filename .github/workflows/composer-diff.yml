@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'composer.lock'
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   composer-diff:
     name: Composer Diff
