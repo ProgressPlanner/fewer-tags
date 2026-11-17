@@ -11,7 +11,7 @@ Fewer Tags helps WordPress sites avoid thin, low-value tag archives.
 
 Instead of letting every tag create another archive URL, the plugin lets you set a minimum number of posts a tag needs before it is considered live on your site. Tags below that threshold are hidden from visitors and search engines, redirected to your homepage, and excluded from supported XML sitemaps.
 
-As of version 2.0, Fewer Tags also lets you merge terms across taxonomies and create redirects when you merge or delete terms — all the functionality previously in Fewer Tags Pro is now included for free.
+Fewer Tags also lets you merge terms across taxonomies and create redirects when you merge or delete terms.
 
 That means fewer useless tag pages, cleaner taxonomy archives, and less crawl waste.
 
@@ -56,6 +56,10 @@ Fewer Tags gives you a simple way to keep useful tag archives while suppressing 
 
 ## FAQ
 
+### What happened to Fewer Tags Pro?
+
+We merged all its features into Fewer Tags in version 2.0. Term merging and redirects after merging or deleting terms are now included for free. We no longer sell a separate Pro plugin.
+
 ### Can I safely install this on an existing site?
 
 Yes. If your site already has lots of low-value tags, Fewer Tags will start suppressing tag archives that fall below your chosen threshold.
@@ -72,7 +76,7 @@ Please use the Patchstack Vulnerability Disclosure Program to report security is
 
 - Plugin home: https://progressplanner.com/plugins/fewer-tags/
 - Research: https://fewertags.com/research/
-- Free plugin walkthrough: https://www.youtube.com/watch?v=KItn1X1qMas
+- Plugin walkthrough: https://www.youtube.com/watch?v=KItn1X1qMas
 
 ## Development
 

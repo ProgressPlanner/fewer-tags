@@ -2,7 +2,7 @@
 Contributors: joostdevalk, aristath, filipi, progressplanner
 Tags: seo, tags, taxonomy, sitemap, archives
 Requires at least: 6.2
-Tested up to: 7.1
+Tested up to: 7.1.4
 Requires PHP: 7.4
 Stable tag: 2.0
 License: GPL-3.0-or-later
@@ -12,7 +12,7 @@ Manage your site's tags: set minimum post counts, merge terms across taxonomies,
 
 == Description ==
 
-Fewer Tags helps you clean up WordPress tag archives by setting a minimum number of posts a tag needs before it becomes live on your site. As of version 2.0, it also lets you merge terms across taxonomies and create redirects when you merge or delete terms — all the functionality previously in Fewer Tags Pro is now included for free.
+Fewer Tags helps you clean up WordPress tag archives by setting a minimum number of posts a tag needs before it becomes live on your site. It also lets you merge terms across taxonomies and create redirects when you merge or delete terms.
 
 Many WordPress sites collect lots of tags with only one or two posts. That creates thin archive pages, extra URLs for search engines to crawl, and taxonomy pages that often add little value for visitors. Fewer Tags solves that by hiding low-volume tag archives until they have enough posts to be useful.
 
@@ -50,7 +50,7 @@ This helps reduce crawl waste while keeping stronger tag archives available.
 
 See [our research on tag usage in WordPress](https://fewertags.com/research/) if you want the background behind this approach.
 
-Watch the free plugin walkthrough:
+Watch the plugin walkthrough:
 https://www.youtube.com/watch?v=KItn1X1qMas
 
 You can learn more about Fewer Tags on [progressplanner.com](https://progressplanner.com/plugins/fewer-tags/)!
@@ -65,6 +65,10 @@ You can learn more about Fewer Tags on [progressplanner.com](https://progresspla
 6. Save your changes.
 
 == Frequently Asked Questions ==
+
+= What happened to Fewer Tags Pro? =
+
+We merged all its features into Fewer Tags in version 2.0. Term merging and redirects after merging or deleting terms are now included for free. We no longer sell a separate Pro plugin.
 
 = Can I safely install this on an existing site? =
 
@@ -100,7 +104,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 = 2.0 =
 
-Major release: all Fewer Tags Pro functionality is now included in the free plugin.
+Major release: term merging and redirects after merging or deleting terms.
 
 New features:
 
@@ -134,7 +138,7 @@ Fixes and safeguards:
 * Change: Rename the option from `joost_min_posts_count` to `fewer_tags` so it is clearer in the database.
 * Enhancement: Add uninstall functionality that removes the setting on uninstall.
 * Dev: Simplify the autoloader and remove the Composer package requirement.
-* Content: Add videos for Fewer Tags Free and Fewer Tags Pro to the readme.
+* Content: Add plugin walkthrough videos to the readme.
 
 = 1.3.3 =
 * Fix: Minor stability improvements.
@@ -158,4 +162,4 @@ Fixes and safeguards:
 == Upgrade Notice ==
 
 = 2.0 =
-All Fewer Tags Pro features — term merging and redirect-on-delete — are now included in the free plugin.
+Adds term merging and redirects after merging or deleting terms, with safeguards for permissions and existing settings.
