@@ -85,15 +85,32 @@ const fewerTagsObserveElementRemoval = ( elements, callback ) => {
 };
 
 /**
+ * Escapes a value for safe use in HTML.
+ *
+ * @param {*} value The value to escape.
+ *
+ * @return {string} The escaped string.
+ */
+function fewerTagsEscapeHtml( value ) {
+	return String( value === null || value === undefined ? '' : value )
+		.replace( /&/g, '&amp;' )
+		.replace( /</g, '&lt;' )
+		.replace( />/g, '&gt;' )
+		.replace( /"/g, '&quot;' )
+		.replace( /'/g, '&#039;' );
+}
+
+/**
  * Create a redirect for a term, and show a notice.
  * This function creates an AJAX request to the server.
  *
- * @param {string} slug     The slug of the term to redirect.
- * @param {string} taxonomy The taxonomy of the term to redirect.
- * @param {string} target   The target URL to redirect to.
- * @param {string} nonce    The nonce to use for the request.
+ * @param {Element} notice   The notice element the redirect was requested from.
+ * @param {string}  slug     The slug of the term to redirect.
+ * @param {string}  taxonomy The taxonomy of the term to redirect.
+ * @param {string}  target   The target URL to redirect to.
+ * @param {string}  nonce    The nonce to use for the request.
  */
-function fewerTagsRedirectToUrl( slug, taxonomy, target, nonce ) { // eslint-disable-line no-unused-vars
+function fewerTagsRedirectToUrl( notice, slug, taxonomy, target, nonce ) {
 	fewerTagsAjaxRequest( {
 		url: fewerTags.ajaxUrl,
 		data: {
@@ -104,18 +121,79 @@ function fewerTagsRedirectToUrl( slug, taxonomy, target, nonce ) { // eslint-dis
 			_ajax_nonce: nonce,
 		},
 		successAction: ( response ) => {
-			const noticeClass = response.success ? 'notice-success' : 'notice-error';
-			document.getElementById( `fewer-tags-redirect-${ response.data.slug }` )
-				.outerHTML = `
-					<div class="notice ${ noticeClass } is-dismissible">
-						<p>${ response.data.msg }</p>
-						<button type="button" class="notice-dismiss">
-							<span class="screen-reader-text">${ fewerTags.dismissText }</span>
-						</button>
-					</div>`;
+			if ( ! response || ! response.data || ! notice ) {
+				return;
+			}
+			// The message is built and escaped on the server.
+			const result = document.createElement( 'div' );
+			result.className = `notice ${ response.success ? 'notice-success' : 'notice-error' } is-dismissible`;
+			result.innerHTML = `
+				<p>${ response.data.msg }</p>
+				<button type="button" class="notice-dismiss">
+					<span class="screen-reader-text">${ fewerTagsEscapeHtml( fewerTags.dismissText ) }</span>
+				</button>`;
+			result.querySelector( '.notice-dismiss' ).addEventListener( 'click', () => result.remove() );
+
+			if ( response.success ) {
+				notice.replaceWith( result );
+				return;
+			}
+			// On failure, keep the original notice so the user can try again, and replace any earlier error.
+			if ( notice.previousElementSibling && notice.previousElementSibling.classList.contains( 'fewer-tags-redirect-error' ) ) {
+				notice.previousElementSibling.remove();
+			}
+			result.classList.add( 'fewer-tags-redirect-error' );
+			notice.before( result );
 		},
 	} );
 }
+
+// The redirect notices can be added to the page after load, so we listen on the document.
+document.addEventListener( 'click', ( event ) => {
+	if ( ! event.target || ! event.target.closest ) {
+		return;
+	}
+
+	const redirectAction = event.target.closest( '.fewer-tags-redirect-action' );
+	if ( redirectAction ) {
+		event.preventDefault();
+		let target = redirectAction.dataset.target;
+		if ( redirectAction.dataset.prompt ) {
+			// eslint-disable-next-line no-alert
+			target = window.prompt( redirectAction.dataset.prompt );
+			if ( target === null || target.trim() === '' ) {
+				// The prompt was cancelled or left empty.
+				return;
+			}
+		}
+		fewerTagsRedirectToUrl(
+			redirectAction.closest( '.fewer-tags-redirect-notice' ),
+			redirectAction.dataset.slug,
+			redirectAction.dataset.taxonomy,
+			target,
+			redirectAction.dataset.nonce
+		);
+		return;
+	}
+
+	const dismissButton = event.target.closest( '.fewer-tags-redirect-notice .notice-dismiss' );
+	if ( dismissButton ) {
+		const notice = dismissButton.closest( '.fewer-tags-redirect-notice' );
+		fewerTagsAjaxRequest( {
+			url: fewerTags.ajaxUrl,
+			data: {
+				action: 'fewer_tags_dismiss_notice',
+				id: dismissButton.getAttribute( 'data-id' ),
+				taxonomy: dismissButton.getAttribute( 'data-taxonomy' ),
+				_ajax_nonce: dismissButton.getAttribute( 'data-nonce' ),
+			},
+			successAction: () => {
+				// Remove the notice from the DOM.
+				notice.remove();
+			},
+		} );
+	}
+} );
 
 async function fewerTagsGetTaxonomies( currentTaxonomy ) {
 	const apiUrl = fewerTags.taxonomiesUrl;
@@ -134,7 +212,7 @@ async function fewerTagsGetTaxonomies( currentTaxonomy ) {
 
 		const taxonomies = await response.json();
 		const publicTaxonomies = Object.keys( taxonomies )
-			.filter( ( key ) => taxonomies[ key ].visibility && taxonomies[ key ].visibility.public ) // Ensure visibility information is present and public
+			.filter( ( key ) => taxonomies[ key ].visibility && taxonomies[ key ].visibility.public && taxonomies[ key ].visibility.show_ui ) // Only public taxonomies with an admin UI can be merged into
 			.map( ( key ) => ( {
 				value: taxonomies[ key ].slug,
 				label: taxonomies[ key ].labels.singular_name,
@@ -261,14 +339,14 @@ fewerTagsGetAllTerms( FTchoicesElement.dataset.taxonomy ).then( ( terms ) => {
 					return template( `
 						<div
 							class="${ classNames.item } ${ classNames.itemChoice } ${ data.disabled ? classNames.itemDisabled : classNames.itemSelectable }"
-							data-select-text="${ this.config.itemSelectText }"
+							data-select-text="${ fewerTagsEscapeHtml( this.config.itemSelectText ) }"
 							data-choice
 							${ data.disabled ? 'data-choice-disabled aria-disabled="true"' : 'data-choice-selectable' }
-							data-id="${ data.id }"
-							data-value="${ data.value }"
+							data-id="${ fewerTagsEscapeHtml( data.id ) }"
+							data-value="${ fewerTagsEscapeHtml( data.value ) }"
 							${ data.groupId > 0 ? 'role="treeitem"' : 'role="option"' }
 						>
-							${ data.label } <span class="count">${ data.customProperties.count }</span>
+							${ fewerTagsEscapeHtml( data.label ) } <span class="count">${ fewerTagsEscapeHtml( data.customProperties.count ) }</span>
 						</div>
 					` );
 				},
@@ -297,14 +375,14 @@ fewerTagsDomReady( () => {
 						return template( `
 							<div
 								class="${ classNames.item } ${ classNames.itemChoice } ${ data.disabled ? classNames.itemDisabled : classNames.itemSelectable }"
-								data-select-text="${ this.config.itemSelectText }"
+								data-select-text="${ fewerTagsEscapeHtml( this.config.itemSelectText ) }"
 								data-choice
 								${ data.disabled ? 'data-choice-disabled aria-disabled="true"' : 'data-choice-selectable' }
-								data-id="${ data.id }"
-								data-value="${ data.value }"
+								data-id="${ fewerTagsEscapeHtml( data.id ) }"
+								data-value="${ fewerTagsEscapeHtml( data.value ) }"
 								${ data.groupId > 0 ? 'role="treeitem"' : 'role="option"' }
 							>
-								${ data.label } <span class="count">${ data.customProperties.post_type }</span>
+								${ fewerTagsEscapeHtml( data.label ) } <span class="count">${ fewerTagsEscapeHtml( data.customProperties.post_type ) }</span>
 							</div>
 						` );
 					},
@@ -331,6 +409,10 @@ fewerTagsDomReady( () => {
 				_ajax_nonce: fewerTags.deleteTermNonce,
 			},
 			successAction: ( response ) => {
+				// No notice to show, for instance when the deleted term has no archive to redirect.
+				if ( ! response || ! response.success || typeof response.data !== 'string' ) {
+					return;
+				}
 				const ajaxResponseEl = document.getElementById( 'ajax-response' );
 				if ( ajaxResponseEl ) {
 					ajaxResponseEl.replaceChildren();
@@ -338,24 +420,6 @@ fewerTagsDomReady( () => {
 				}
 				window.scrollTo( 0, 0 );
 			},
-		} );
-	} );
-
-	document.querySelectorAll( '.fewer-tags-redirect-notice .notice-dismiss' ).forEach( ( element ) => {
-		element.addEventListener( 'click', () => {
-			fewerTagsAjaxRequest( {
-				url: fewerTags.ajaxUrl,
-				data: {
-					action: 'fewer_tags_dismiss_notice',
-					id: element.getAttribute( 'data-id' ),
-					taxonomy: element.getAttribute( 'data-taxonomy' ),
-					_ajax_nonce: element.getAttribute( 'data-nonce' ),
-				},
-				successAction: ( response ) => {
-					// Remove the notice from the DOM.
-					document.getElementById( `fewer-tags-redirect-${ response.data }` ).remove();
-				},
-			} );
 		} );
 	} );
 
@@ -403,25 +467,46 @@ fewerTagsDomReady( () => {
 				_ajax_nonce: document.getElementById( 'fewer-tags-merge-terms-nonce' ).value,
 			},
 			successAction: ( response ) => {
+				if ( ! response || ! response.success ) {
+					const errorMsg = response && response.data && response.data.msg ? response.data.msg : '';
+					document.getElementById( 'ajax-response' )
+						.innerHTML = `
+							<div class="notice notice-error is-dismissible">
+								<p>${ fewerTagsEscapeHtml( errorMsg ) }</p>
+								<button type="button" class="notice-dismiss">
+									<span class="screen-reader-text">${ fewerTagsEscapeHtml( fewerTags.dismissText ) }</span>
+								</button>
+							</div>`;
+					document.querySelector( '#ajax-response .notice-dismiss' ).addEventListener( 'click', ( event ) => {
+						event.target.closest( '.notice' ).remove();
+					} );
+					tb_remove();
+					window.scrollTo( 0, 0 );
+					return;
+				}
+
 				// Remove the option from the list of terms and from the backup, as it must not exist there in case we want to merge more terms and should not be added back to the list.
 				FTbackup = {};
 				FTterms = fewerTagsRemoveObjectByValue( FTterms, response.data.source_id );
 
 				// Hide the row from the table.
-				document.querySelector( `tr#tag-${ response.data.source_id }` ).style.display = 'none';
+				const sourceRow = document.getElementById( `tag-${ parseInt( response.data.source_id ) }` );
+				if ( sourceRow ) {
+					sourceRow.style.display = 'none';
+				}
 
 				document.getElementById( 'ajax-response' )
 					.innerHTML = `
 						<div class="notice notice-success is-dismissible">
 							<p>${ response.data.msg }</p>
 							<button type="button" class="notice-dismiss">
-								<span class="screen-reader-text">${ fewerTags.dismissText }</span>
+								<span class="screen-reader-text">${ fewerTagsEscapeHtml( fewerTags.dismissText ) }</span>
 							</button>
 						</div>`;
 
-				const elTr = document.querySelector( `tr#tag-${ response.data.target_id } td.column-posts a` );
+				const elTr = document.querySelector( `tr#tag-${ parseInt( response.data.target_id ) } td.column-posts a` );
 				if ( elTr ) {
-					elTr.innerHTML = response.data.target_count;
+					elTr.textContent = response.data.target_count;
 				}
 
 				// Add event listener to the dismiss button.

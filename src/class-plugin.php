@@ -125,6 +125,13 @@ class Plugin {
 			update_option( 'fewer_tags', $current );
 			delete_option( 'fewer_tags_pro' );
 		}
+
+		// 4. The "just deleted term" used to be stored site-wide; it now lives in user meta.
+		$current = get_option( 'fewer_tags', [] );
+		if ( is_array( $current ) && ( isset( $current['just_deleted_term'] ) || isset( $current['just_deleted_term_permalink'] ) ) ) {
+			unset( $current['just_deleted_term'], $current['just_deleted_term_permalink'] );
+			update_option( 'fewer_tags', $current );
+		}
 	}
 
 	/**
@@ -136,17 +143,20 @@ class Plugin {
 	 * @return array The modified actions array.
 	 */
 	public function add_merge_action( $actions, $term ) {
-		$taxonomy = \get_taxonomy( $term->taxonomy );
+		$taxonomy = Helper::get_supported_taxonomy( $term->taxonomy );
+		if ( ! $taxonomy || ! \current_user_can( $taxonomy->cap->manage_terms ) || ! \current_user_can( $taxonomy->cap->delete_terms ) ) {
+			return $actions;
+		}
 
 		// Add a 'Merge' action link.
 		$actions['merge'] = \sprintf(
 			'<a class="thickbox fewer-tags-merge-action" data-term-id="%1$d" data-term-name="%2$s" data-term-taxonomy="%3$s" title="%4$s" href="#TB_inline?width=600&height=360&inlineId=merge-tags-modal">%5$s</a>',
-			$term->term_id,
-			$term->name,
-			$term->taxonomy,
+			(int) $term->term_id,
+			\esc_attr( $term->name ),
+			\esc_attr( $term->taxonomy ),
 			// translators: %s is the name of the tag.
-			sprintf( __( 'Merge %1$s', 'fewer-tags' ), strtolower( $taxonomy->labels->name ) ),
-			__( 'Merge', 'fewer-tags' )
+			\esc_attr( sprintf( __( 'Merge %1$s', 'fewer-tags' ), strtolower( $taxonomy->labels->name ) ) ),
+			\esc_html__( 'Merge', 'fewer-tags' )
 		);
 
 		return $actions;
@@ -320,19 +330,17 @@ class Plugin {
 
 		$taxonomy          = \get_current_screen()->taxonomy;
 		$terms_to_redirect = $this->options->get( 'terms_to_redirect' );
-		if ( ! isset( $terms_to_redirect[ $taxonomy ] ) ) {
+		if ( ! is_array( $terms_to_redirect ) || empty( $terms_to_redirect[ $taxonomy ] ) || ! is_array( $terms_to_redirect[ $taxonomy ] ) ) {
 			return;
 		}
-		$terms_to_redirect = $terms_to_redirect[ $taxonomy ];
 
-		if ( ! empty( $terms_to_redirect ) && count( $terms_to_redirect ) > 0 ) {
-			foreach ( $terms_to_redirect as $slug => $term_array ) {
-				if ( ! isset( $term_array['object'] ) || ! $term_array['object'] instanceof \WP_Term ) {
-					continue;
-				}
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- output escaped in function.
-				echo Helper::redirect_term_notice( $slug, $term_array['object']->name, $taxonomy );
+		foreach ( $terms_to_redirect[ $taxonomy ] as $slug => $entry ) {
+			$term = Helper::normalize_term_to_redirect( $entry, $taxonomy, (string) $slug );
+			if ( null === $term ) {
+				continue;
 			}
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- output escaped in function.
+			echo Helper::redirect_term_notice( $term['slug'], $term['name'], $taxonomy );
 		}
 	}
 }
