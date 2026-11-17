@@ -7,7 +7,7 @@
  *
  * Plugin Name:       Fewer Tags
  * Plugin URI:        https://progressplanner.com/plugins/fewer-tags/
- * Description:       Manage your site's tags: set minimum post counts, merge terms, and create redirects. Change settings under Settings → Reading. Learn more at progressplanner.com/plugins/fewer-tags/.
+ * Description:       Manage your site's tags: set minimum post counts, merge terms, and create redirects. Change settings under Settings → Reading.
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Version:           2.0
