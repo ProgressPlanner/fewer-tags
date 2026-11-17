@@ -40,7 +40,8 @@ class Redirects {
 			return false;
 		}
 
-		$response = $this->create_redirect( $term['permalink'], $target_url );
+		// Use the local archive path, just as merging does, and retain its query string.
+		$response = $this->create_redirect( \wp_make_link_relative( $term['permalink'] ), $target_url );
 		if ( ! $response ) {
 			return false;
 		}
