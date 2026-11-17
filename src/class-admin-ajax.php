@@ -310,7 +310,7 @@ class Admin_Ajax {
 		// The default term of a taxonomy cannot be deleted, so we remove it from each post manually after merging.
 		$default_taxonomy_term_id = (int) \get_option( 'default_' . $source_taxonomy, 0 );
 
-		// Get all posts with the source tag and add the target tag to them.
+		// Validate every object before assigning terms or deleting the source.
 		$posts = \get_objects_in_term( $source_term_id, $source_taxonomy );
 		if ( \is_wp_error( $posts ) ) {
 			\wp_send_json_error( [ 'msg' => __( 'We could not find the terms to merge.', 'fewer-tags' ) ] );
@@ -319,11 +319,13 @@ class Admin_Ajax {
 			$post_id   = (int) $post_id;
 			$post_type = \get_post_type( $post_id );
 
-			// Only add the target term to objects the target taxonomy is registered for.
 			if ( ! $post_type || ! \is_object_in_taxonomy( $post_type, $source_taxonomy ) || ! \is_object_in_taxonomy( $post_type, $target_taxonomy ) ) {
-				continue;
+				\wp_send_json_error( [ 'msg' => __( 'These terms cannot be merged because some content cannot use the target taxonomy.', 'fewer-tags' ) ] );
 			}
+		}
 
+		foreach ( $posts as $post_id ) {
+			$post_id = (int) $post_id;
 			\wp_set_object_terms( $post_id, [ $target_term_id ], $target_taxonomy, true );
 			if ( $default_taxonomy_term_id && $source_term_id === $default_taxonomy_term_id ) {
 				\wp_remove_object_terms( $post_id, $default_taxonomy_term_id, $source_taxonomy );

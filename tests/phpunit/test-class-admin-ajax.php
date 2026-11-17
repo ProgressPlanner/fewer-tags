@@ -260,6 +260,53 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 	}
 
 	/**
+	 * A partially compatible taxonomy must not lose assignments or change any posts.
+	 */
+	public function test_merge_rejects_incompatible_objects_before_changing_terms() {
+		register_taxonomy( 'shared_topic', [ 'post', 'page' ], [ 'public' => true ] );
+		$source  = self::factory()->term->create( [ 'taxonomy' => 'shared_topic' ] );
+		$target  = self::factory()->tag->create();
+		$post_id = self::factory()->post->create();
+		$page_id = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		wp_set_object_terms( $post_id, [ $source ], 'shared_topic' );
+		wp_set_object_terms( $page_id, [ $source ], 'shared_topic' );
+
+		try {
+			$response = $this->merge( $source, 'shared_topic', $target, 'post_tag' );
+
+			$this->assertFalse( $response['success'] );
+			$this->assertInstanceOf( \WP_Term::class, get_term( $source, 'shared_topic' ) );
+			$this->assertTrue( has_term( $source, 'shared_topic', $post_id ) );
+			$this->assertTrue( has_term( $source, 'shared_topic', $page_id ) );
+			$this->assertFalse( has_term( $target, 'post_tag', $post_id ) );
+			$this->assertFalse( has_term( $target, 'post_tag', $page_id ) );
+		} finally {
+			unregister_taxonomy( 'shared_topic' );
+		}
+	}
+
+	/**
+	 * Partially overlapping taxonomies can merge when every actual object is compatible.
+	 */
+	public function test_merge_allows_compatible_objects_in_overlapping_taxonomies() {
+		register_taxonomy( 'shared_topic', [ 'post', 'page' ], [ 'public' => true ] );
+		$source  = self::factory()->term->create( [ 'taxonomy' => 'shared_topic' ] );
+		$target  = self::factory()->tag->create();
+		$post_id = self::factory()->post->create();
+		wp_set_object_terms( $post_id, [ $source ], 'shared_topic' );
+
+		try {
+			$response = $this->merge( $source, 'shared_topic', $target, 'post_tag' );
+
+			$this->assertTrue( $response['success'] );
+			$this->assertNull( get_term( $source, 'shared_topic' ) );
+			$this->assertTrue( has_term( $target, 'post_tag', $post_id ) );
+		} finally {
+			unregister_taxonomy( 'shared_topic' );
+		}
+	}
+
+	/**
 	 * Editors cannot redirect to another site.
 	 *
 	 * @dataProvider data_external_targets
