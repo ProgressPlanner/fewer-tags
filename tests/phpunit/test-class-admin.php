@@ -86,7 +86,7 @@ class Admin_Test extends \WP_UnitTestCase {
 		global $wp_settings_sections, $wp_settings_fields;
 
 		$this->assertArrayHasKey( 'fewer_tags_section', $wp_settings_sections['reading'] );
-		$this->assertArrayHasKey( Plugin::$option_name, $wp_settings_fields['reading']['fewer_tags_section'] );
+		$this->assertArrayHasKey( 'fewer_tags_min_posts_count', $wp_settings_fields['reading']['fewer_tags_section'] );
 	}
 
 	/**
@@ -95,13 +95,33 @@ class Admin_Test extends \WP_UnitTestCase {
 	 * @covers FewerTags\Admin::sanitize_setting
 	 */
 	public function test_sanitize_setting() {
+		$redirects = [
+			'post_tag' => [
+				'old-tag' => [
+					'name'      => 'Old tag',
+					'permalink' => home_url( '/tag/old-tag/' ),
+				],
+			],
+		];
+		update_option(
+			'fewer_tags',
+			[
+				'min_posts_count'   => 10,
+				'terms_to_redirect' => $redirects,
+			]
+		);
 		self::$class_instance->register_settings();
-
-		$this->assertSame( 5, sanitize_option( Plugin::$option_name, '5' ) );
-		$this->assertSame( 0, sanitize_option( Plugin::$option_name, '0' ) );
-		$this->assertSame( 0, sanitize_option( Plugin::$option_name, '' ) );
-		$this->assertSame( 0, sanitize_option( Plugin::$option_name, '-5' ) );
-		$this->assertSame( 0, sanitize_option( Plugin::$option_name, 'abc' ) );
+		foreach ( [
+			'5'   => 5,
+			'0'   => 0,
+			''    => 0,
+			'-5'  => 0,
+			'abc' => 0,
+		] as $value => $expected ) {
+			$sanitized = sanitize_option( 'fewer_tags', [ 'min_posts_count' => (string) $value ] );
+			$this->assertSame( $expected, $sanitized['min_posts_count'] );
+			$this->assertSame( $redirects, $sanitized['terms_to_redirect'] );
+		}
 	}
 
 	/**
@@ -127,10 +147,10 @@ class Admin_Test extends \WP_UnitTestCase {
 		self::$class_instance->display_setting();
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'name="' . Plugin::$option_name . '"', $output );
-		$this->assertStringContainsString( 'id="' . Plugin::$option_name . '"', $output );
+		$this->assertStringContainsString( 'name="fewer_tags[min_posts_count]"', $output );
+		$this->assertStringContainsString( 'id="fewer_tags_min_posts_count"', $output );
 		$this->assertStringContainsString( 'type="number"', $output );
-		$this->assertStringContainsString( 'min="1"', $output );
+		$this->assertStringContainsString( 'min="0"', $output );
 		$this->assertStringContainsString( 'value="5"', $output ); // This is tied to the value of Plugin::$min_posts_count.
 		$this->assertStringContainsString( 'class="small-text"', $output );
 		$this->assertStringContainsString( 'posts before being live on the site.', $output );
