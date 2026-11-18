@@ -5,6 +5,10 @@
  * @package FewerTags
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 spl_autoload_register(
 	function ( $class_name ) {
 		$prefix = 'FewerTags\\';
