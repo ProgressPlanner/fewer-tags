@@ -41,10 +41,16 @@ jobs:
         #
         # Pinned to v3.1.0 deliberately: newest release accepting wp-cli ^2.
         # v3.2.x requires ^2.13, which has no stable release (latest is 2.12.0).
-        - name: Install latest version of dist-archive-command
+        #
+        # Installed from the release zip rather than by package name: by name,
+        # Composer registers the repository as a VCS source and queries the
+        # GitHub API, which without the credential above fails intermittently
+        # on shared runners with "Could not authenticate against github.com".
+        # The zip download does not go through the API.
+        - name: Install dist-archive-command
           run: |
             rm -f "$(composer config --global home 2>/dev/null)/auth.json"
-            wp package install wp-cli/dist-archive-command:v3.1.0
+            wp package install https://github.com/wp-cli/dist-archive-command/archive/refs/tags/v3.1.0.zip
 
         # Build the same file set that ships to WordPress.org: `wp dist-archive`
         # honours .distignore, so tests, tooling config and .wordpress-org are
