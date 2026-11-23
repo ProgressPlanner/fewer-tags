@@ -125,6 +125,48 @@ class Admin_Test extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Full-array writes from Option::set() keep their new keys, and a write
+	 * without min_posts_count keeps the stored value instead of resetting it.
+	 *
+	 * @covers FewerTags\Admin::sanitize_setting
+	 */
+	public function test_sanitize_setting_keeps_full_array_writes() {
+		update_option(
+			'fewer_tags',
+			[
+				'min_posts_count'   => 3,
+				'terms_to_redirect' => [],
+			]
+		);
+		self::$class_instance->register_settings();
+
+		$redirects = [
+			'post_tag' => [
+				'new-tag' => [
+					'name'      => 'New tag',
+					'permalink' => home_url( '/tag/new-tag/' ),
+				],
+			],
+		];
+		update_option(
+			'fewer_tags',
+			[
+				'min_posts_count'   => 3,
+				'terms_to_redirect' => $redirects,
+			]
+		);
+		$saved = get_option( 'fewer_tags' );
+		$this->assertSame( $redirects, $saved['terms_to_redirect'] );
+		$this->assertSame( 3, $saved['min_posts_count'] );
+
+		update_option( 'fewer_tags', [ 'redirection_group' => 7 ] );
+		$saved = get_option( 'fewer_tags' );
+		$this->assertSame( 3, $saved['min_posts_count'] );
+		$this->assertSame( 7, $saved['redirection_group'] );
+		$this->assertSame( $redirects, $saved['terms_to_redirect'] );
+	}
+
+	/**
 	 * Tests display section.
 	 *
 	 * @covers FewerTags\Admin::display_section

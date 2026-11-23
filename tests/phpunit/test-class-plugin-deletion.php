@@ -7,6 +7,7 @@
 
 namespace FewerTags\Tests;
 
+use FewerTags\Admin;
 use FewerTags\Helper;
 use FewerTags\Option;
 use FewerTags\Plugin;
@@ -27,6 +28,12 @@ class Plugin_Deletion_Test extends \WP_UnitTestCase {
 		try {
 			$plugin = new Plugin();
 			$plugin->init();
+
+			// A real edit-tags.php request fires admin_init before the deletion,
+			// which registers the fewer_tags sanitizer on every update_option().
+			// Run only the plugin's callback: core's admin_init callbacks send headers.
+			( new Admin() )->register_settings();
+			$this->assertNotFalse( has_filter( 'sanitize_option_fewer_tags' ) );
 			$terms = [];
 			foreach ( [ 'first-deleted', 'second-deleted' ] as $slug ) {
 				$term           = self::factory()->tag->create( [ 'slug' => $slug ] );
@@ -40,6 +47,14 @@ class Plugin_Deletion_Test extends \WP_UnitTestCase {
 				$this->assertSame( $url, $stored['permalink'] );
 			}
 
+			// The next request reads the database, not the in-memory Option cache.
+			$saved = get_option( 'fewer_tags' );
+			$this->assertArrayHasKey( 'post_tag', $saved['terms_to_redirect'] ?? [], 'Deleted terms were not saved to the database.' );
+			foreach ( $terms as $slug => $url ) {
+				$this->assertArrayHasKey( $slug, $saved['terms_to_redirect']['post_tag'] );
+				$this->assertSame( $url, $saved['terms_to_redirect']['post_tag'][ $slug ]['permalink'] );
+			}
+
 			ob_start();
 			$plugin->do_notices();
 			$notices = ob_get_clean();
@@ -47,6 +62,33 @@ class Plugin_Deletion_Test extends \WP_UnitTestCase {
 			$this->assertStringContainsString( 'fewer-tags-redirect-second-deleted', $notices );
 		} finally {
 			remove_filter( 'wp_doing_ajax', '__return_false' );
+			set_current_screen( 'front' );
+		}
+	}
+
+	/**
+	 * Rows rendered through admin-ajax.php (Add New Tag, Quick Edit) keep the
+	 * plugin's column, hidden View action and Merge action.
+	 */
+	public function test_ajax_requests_register_list_table_hooks() {
+		set_current_screen( 'edit-post_tag' );
+		add_filter( 'wp_doing_ajax', '__return_true' );
+
+		try {
+			$plugin = new Plugin();
+			$plugin->init();
+
+			$this->assertNotFalse( has_filter( 'manage_edit-post_tag_columns' ) );
+			$this->assertNotFalse( has_filter( 'manage_post_tag_custom_column' ) );
+			$this->assertNotFalse( has_filter( 'post_tag_row_actions' ) );
+			$this->assertSame( 10, has_filter( 'tag_row_actions', [ $plugin, 'add_merge_action' ] ) );
+			$this->assertSame( 10, has_filter( 'category_row_actions', [ $plugin, 'add_merge_action' ] ) );
+
+			// Page-only hooks stay off AJAX requests.
+			$this->assertFalse( has_action( 'admin_notices', [ $plugin, 'do_notices' ] ) );
+			$this->assertFalse( has_action( 'admin_footer', [ $plugin, 'output_modal' ] ) );
+		} finally {
+			remove_filter( 'wp_doing_ajax', '__return_true' );
 			set_current_screen( 'front' );
 		}
 	}

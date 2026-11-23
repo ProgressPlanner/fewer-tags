@@ -47,11 +47,17 @@ class Plugin {
 		if ( is_admin() ) {
 			// Bulk deletion runs in a normal admin request, so always register deletion hooks.
 			new Admin_Ajax();
+
+			// List table hooks must also run on AJAX: WordPress renders rows through
+			// admin-ajax.php when a tag is added or quick-edited.
+			$admin = new Admin();
+			$admin->register_list_table_hooks();
+			$this->register_merge_action_filters();
+
 			if ( \wp_doing_ajax() ) {
 				return;
 			}
 
-			$admin = new Admin();
 			$admin->register_hooks();
 
 			$this->options = Option::get_instance();
@@ -59,20 +65,6 @@ class Plugin {
 			\add_action( 'admin_notices', [ $this, 'do_notices' ] );
 			\add_action( 'admin_footer', [ $this, 'output_modal' ] );
 			\add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
-			\add_filter( 'tag_row_actions', [ $this, 'add_merge_action' ], 10, 2 );
-			\add_filter( 'category_row_actions', [ $this, 'add_merge_action' ], 10, 2 );
-
-			// Add merge action for custom taxonomies.
-			$taxonomies = \get_taxonomies(
-				[
-					'public'   => true,
-					'_builtin' => false,
-				],
-				'names'
-			);
-			foreach ( $taxonomies as $taxonomy ) {
-				\add_filter( "{$taxonomy}_row_actions", [ $this, 'add_merge_action' ], 10, 2 );
-			}
 
 			// Detect if we're running on the playground, if so, load our playground specific class.
 			if ( defined( 'IS_PLAYGROUND_PREVIEW' ) && IS_PLAYGROUND_PREVIEW ) {
@@ -84,6 +76,27 @@ class Plugin {
 		}
 		$frontend = new Frontend();
 		$frontend->register_hooks();
+	}
+
+	/**
+	 * Add the 'Merge' row action to tags, categories and public custom taxonomies.
+	 *
+	 * @return void
+	 */
+	private function register_merge_action_filters() {
+		\add_filter( 'tag_row_actions', [ $this, 'add_merge_action' ], 10, 2 );
+		\add_filter( 'category_row_actions', [ $this, 'add_merge_action' ], 10, 2 );
+
+		$taxonomies = \get_taxonomies(
+			[
+				'public'   => true,
+				'_builtin' => false,
+			],
+			'names'
+		);
+		foreach ( $taxonomies as $taxonomy ) {
+			\add_filter( "{$taxonomy}_row_actions", [ $this, 'add_merge_action' ], 10, 2 );
+		}
 	}
 
 	/**

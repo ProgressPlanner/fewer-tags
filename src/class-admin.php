@@ -20,6 +20,18 @@ class Admin {
 	public function register_hooks() {
 		\add_action( 'admin_init', [ $this, 'register_settings' ] );
 		\add_action( 'admin_notices', [ $this, 'redirect_tool_notice' ] );
+		$this->register_list_table_hooks();
+	}
+
+	/**
+	 * Register the tag list table hooks.
+	 *
+	 * These also run on AJAX requests, because WordPress renders rows through
+	 * admin-ajax.php when a tag is added or quick-edited.
+	 *
+	 * @return void
+	 */
+	public function register_list_table_hooks() {
 		\add_filter( 'manage_edit-post_tag_columns', [ $this, 'add_tag_columns' ] );
 		\add_filter( 'manage_post_tag_custom_column', [ $this, 'manage_tag_columns' ], 10, 3 );
 		\add_filter( 'post_tag_row_actions', [ $this, 'remove_view_action' ], 10, 2 );
@@ -87,10 +99,13 @@ class Admin {
 	/**
 	 * Sanitize the setting value.
 	 *
-	 * Receives the form submission for the fewer_tags option, updates only the
-	 * min_posts_count key, and preserves all other keys in the array.
+	 * The sanitize_option_fewer_tags filter runs on every update_option() call,
+	 * not just the Reading settings form. The form only submits min_posts_count,
+	 * while the plugin itself saves the full array (terms_to_redirect,
+	 * redirection_group) through Option::set(). So merge the input over the
+	 * stored value: submitted keys win, keys that aren't submitted are kept.
 	 *
-	 * @param mixed $input The input value from the form.
+	 * @param mixed $input The input value from the form or update_option().
 	 *
 	 * @return array The sanitized option array.
 	 */
@@ -99,13 +114,16 @@ class Admin {
 		if ( ! is_array( $current ) ) {
 			$current = [];
 		}
+		if ( ! is_array( $input ) ) {
+			$input = [];
+		}
 
-		// Preserve the previous "off" behavior for zero and negative values.
-		$min_posts_count = isset( $input['min_posts_count'] ) ? max( 0, (int) $input['min_posts_count'] ) : 10;
+		$sanitized = array_merge( $current, $input );
 
-		$current['min_posts_count'] = $min_posts_count;
+		// Submitted value, else stored value, else the default. Zero and negative mean "off".
+		$sanitized['min_posts_count'] = max( 0, (int) ( $sanitized['min_posts_count'] ?? 10 ) );
 
-		return $current;
+		return $sanitized;
 	}
 
 	/**
