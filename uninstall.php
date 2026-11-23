@@ -15,3 +15,7 @@ delete_option( 'joost_min_posts_count' );
 
 // Delete the option.
 delete_option( 'fewer_tags' );
+
+// Delete the per-user "just deleted term" markers.
+delete_metadata( 'user', 0, 'fewer_tags_just_deleted_term', '', true );
+delete_metadata( 'user', 0, 'fewer_tags_redirect_tool_notice_dismissed', '', true );

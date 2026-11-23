@@ -1,35 +1,87 @@
-[![CS](https://github.com/jdevalk/fewer-tags/actions/workflows/cs.yml/badge.svg)](https://github.com/jdevalk/fewer-tags/actions/workflows/cs.yml)
-[![Lint](https://github.com/jdevalk/fewer-tags/actions/workflows/lint.yml/badge.svg)](https://github.com/jdevalk/fewer-tags/actions/workflows/lint.yml)
-[![Security](https://github.com/Emilia-Capital/fewer-tags/actions/workflows/security.yml/badge.svg)](https://github.com/Emilia-Capital/fewer-tags/actions/workflows/security.yml)
+[![CS](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/cs.yml/badge.svg)](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/cs.yml)
+[![Lint](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/lint.yml/badge.svg)](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/lint.yml)
+[![Security](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/security.yml/badge.svg)](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/security.yml)
+[![PHPUnit](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/phpunit.yml/badge.svg)](https://github.com/ProgressPlanner/fewer-tags/actions/workflows/phpunit.yml)
+
+![Fewer Tags](/.wordpress-org/github_banner_fewer_tags_pp.png)
 
 # Fewer Tags
-One of the most common SEO problems on WordPress sites is that people add too many tags to posts. The WordPress interface makes it incredibly easy to do so, and with every tag you add, you add another URL to your site for search engines to crawl and index. This plugin minimizes that effect by setting a minimum number of posts needed for a tag to be “live” on your site.
 
-Tags that have fewer than the configured number of posts:
- * don't work on your site, and are redirected to your homepage.
- * no longer show up in tag listings.
- * are no longer linked in WordPress core's or Yoast SEO generated XML sitemaps.
+Fewer Tags helps WordPress sites avoid thin, low-value tag archives.
 
-This positively affects your site's SEO and also leads to less crawling, as you have fewer useless tag pages.
+Instead of letting every tag create another archive URL, the plugin lets you set a minimum number of posts a tag needs before it is considered live on your site. Tags below that threshold are hidden from visitors and search engines, redirected to your homepage, and excluded from supported XML sitemaps.
 
-### Development
+Fewer Tags also lets you merge terms across taxonomies and create redirects when you merge or delete terms.
 
-To test the Playground specific setup in development, add the following to your `wp-config.php`:
+That means fewer useless tag pages, cleaner taxonomy archives, and less crawl waste.
+
+## What it does
+
+Fewer Tags lets you define the minimum number of posts a tag needs before it becomes live. Tags below that threshold:
+
+- redirect their archive page to your homepage
+- no longer appear in tag listings
+- no longer appear in WordPress core XML sitemaps
+- no longer appear in Yoast SEO XML sitemaps
+- no longer appear in Slim SEO XML sitemaps
+
+The default threshold is 10 posts, and you can change it under **Settings → Reading**.
+
+## Merging and redirects
+
+- Merge tags, categories, and public custom taxonomy terms when you have permission to manage them. Cross-taxonomy merges require all affected content to support the target taxonomy. The target term is added to the source term’s posts, and the source term is removed. A 301 redirect is created when Redirection or Yoast SEO Premium is active.
+- When you delete a term, Fewer Tags prompts you to create a redirect to the homepage or another URL. External destinations require administrator permissions.
+- Redirects are created via the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
+
+## Why use it?
+
+Many WordPress sites accumulate lots of tags that only contain one or two posts. Those tag archives rarely help users, and they create extra URLs for search engines to crawl and index.
+
+Fewer Tags gives you a simple way to keep useful tag archives while suppressing the ones that add little value.
+
+## How it works
+
+- On the front end, low-volume tag archives redirect to the homepage.
+- On posts, low-volume tags are filtered from tag output.
+- In the WordPress admin, you can see whether a tag is live in the Tags overview.
+- In supported sitemap providers, low-volume tags are excluded automatically.
+
+## Installation
+
+1. Install **Fewer Tags** from your WordPress dashboard or upload the plugin manually.
+2. Activate the plugin.
+3. Go to **Settings → Reading**.
+4. Choose how many posts a tag needs before it becomes live on your site.
+5. To create redirects after merging or deleting terms, install and activate the [Redirection plugin](https://wordpress.org/plugins/redirection/) or Yoast SEO Premium.
+
+## FAQ
+
+### What happened to Fewer Tags Pro?
+
+We merged all its features into Fewer Tags in version 2.0. Term merging and redirects after merging or deleting terms are now included for free. We no longer sell a separate Pro plugin.
+
+### Can I safely install this on an existing site?
+
+Yes. If your site already has lots of low-value tags, Fewer Tags will start suppressing tag archives that fall below your chosen threshold.
+
+### Should I noindex tag pages instead?
+
+Usually no. Tag archives can be useful when they group enough related content. Fewer Tags is designed to keep valuable tag archives live while suppressing the weak ones.
+
+### How can I report security bugs?
+
+Please use the Patchstack Vulnerability Disclosure Program to report security issues: https://patchstack.com/database/vdp/fewer-tags
+
+## Learn more
+
+- Plugin home: https://progressplanner.com/plugins/fewer-tags/
+- Research: https://fewertags.com/research/
+- Plugin walkthrough: https://www.youtube.com/watch?v=KItn1X1qMas
+
+## Development
+
+To test the Playground-specific setup in development, add the following to your `wp-config.php`:
 
 ```php
 define( 'IS_PLAYGROUND_PREVIEW', true );
 ```
-
-## Frequently Asked Questions
-
-### Can I safely install this on an existing site?
-
-So you have a site with a lot of tags that don't add any value? Yes, you can safely add this plugin. It will redirect the useless tag pages to your site's homepage.
-
-### Should I also noindex my tag pages?
-
-No, you should not noindex your tag pages. If your tag pages have more than 10 posts in them, they are valuable ways of getting your site crawled and of combining related content. There's no reason to noindex those pages at that point. What you could (and should) do is add descriptions to those tag pages.
-
-### How can I report security bugs?
-
-You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team help validate, triage and handle any security vulnerabilities. [Report a security vulnerability.](https://patchstack.com/database/vdp/fewer-tags)

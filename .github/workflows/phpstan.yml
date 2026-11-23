@@ -26,8 +26,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          # PHPStan 1.x from the lock file does not start on PHP 8.4 or higher.
-          php-version: '8.3'
+          php-version: 'latest'
           coverage: none
           tools: composer, cs2pr
 
