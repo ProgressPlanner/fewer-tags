@@ -52,7 +52,8 @@ class Plugin {
 			// admin-ajax.php when a tag is added or quick-edited.
 			$admin = new Admin();
 			$admin->register_list_table_hooks();
-			$this->register_merge_action_filters();
+			// Wait for admin_init, so taxonomies registered later on init get the Merge action too.
+			\add_action( 'admin_init', [ $this, 'register_merge_action_filters' ] );
 
 			if ( \wp_doing_ajax() ) {
 				return;
@@ -81,9 +82,11 @@ class Plugin {
 	/**
 	 * Add the 'Merge' row action to tags, categories and public custom taxonomies.
 	 *
+	 * Runs on admin_init, after every taxonomy has been registered on init.
+	 *
 	 * @return void
 	 */
-	private function register_merge_action_filters() {
+	public function register_merge_action_filters() {
 		\add_filter( 'tag_row_actions', [ $this, 'add_merge_action' ], 10, 2 );
 		\add_filter( 'category_row_actions', [ $this, 'add_merge_action' ], 10, 2 );
 
@@ -293,7 +296,7 @@ class Plugin {
 			<form id="fewer-tags-merge-form">
 				<?php // translators: %1$s is the taxonomy of the terms we're merging. ?>
 				<h3><?php printf( \esc_html__( 'Merge %1$s', 'fewer-tags' ), \esc_html( strtolower( $taxonomy->labels->name ) ) ); ?></h3>
-				<div id="fewer-tags-note"><p><?php \esc_html_e( 'If you merge a default term into another, we will add the posts to the target term and remove them from the default term. The default term itself cannot be deleted.', 'fewer-tags' ); ?></p></div>
+				<div id="fewer-tags-note"><p><?php \esc_html_e( 'If you merge a default term into another, we will add the posts to the target term and remove them from the default term. The default term itself cannot be deleted, so its archive is not redirected.', 'fewer-tags' ); ?></p></div>
 				<input type="hidden" name="nonce" id="fewer-tags-merge-terms-nonce" value="<?php echo \esc_attr( \wp_create_nonce( 'fewer_tags_merge_terms' ) ); ?>" />
 				<input type="hidden" name="source_id" id="fewer-tags-source-term-id" value="" />
 				<input type="hidden" name="source_taxonomy" id="fewer-tags-taxonomy" value="<?php echo \esc_attr( $screen->taxonomy ); ?>" />

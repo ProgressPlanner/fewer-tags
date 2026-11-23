@@ -315,11 +315,33 @@ function fewerTagsGetObjectByValue( arr, valueToFind ) {
 	return arr.find( ( item ) => parseInt( item.value ) === parseInt( valueToFind ) );
 }
 
-let FTchoices = {};
-let FTbackup = {};
+// The Choices instance for the target term dropdown, set once the terms have loaded.
+let FTchoices = null;
+// The source term, taken out of FTterms while the merge modal is open so a term can't be merged into itself.
+let FTbackup = null;
 
 const FTchoicesElement = document.getElementById( 'fewer-tags-target-term-id' );
-fewerTagsGetAllTerms( FTchoicesElement.dataset.taxonomy ).then( ( terms ) => {
+// The taxonomy FTterms currently holds terms for.
+let FTtermsTaxonomy = FTchoicesElement.dataset.taxonomy;
+
+/**
+ * Take the merge source term out of the target list, so a term can't be merged into itself.
+ *
+ * The term is backed up, so the modal-close observer can add it again for the next merge.
+ * Only applies when the list holds terms of the source term's taxonomy.
+ */
+function fewerTagsExcludeSourceTerm() {
+	const sourceID = document.getElementById( 'fewer-tags-source-term-id' ).value;
+	const sourceTaxonomy = document.getElementById( 'fewer-tags-taxonomy' ).value;
+	const sourceTerm = FTtermsTaxonomy === sourceTaxonomy ? fewerTagsGetObjectByValue( FTterms, sourceID ) : undefined;
+	if ( sourceTerm ) {
+		FTbackup = { term: sourceTerm, taxonomy: sourceTaxonomy };
+		FTterms = fewerTagsRemoveObjectByValue( FTterms, sourceID );
+	}
+}
+
+// Resolves once the target term dropdown exists. Loading pages through every term, so it can take a while.
+const FTtermsReady = fewerTagsGetAllTerms( FTchoicesElement.dataset.taxonomy ).then( ( terms ) => {
 	FTterms = terms;
 	FTchoices = new Choices( FTchoicesElement, {
 		choices: FTterms,
@@ -393,8 +415,12 @@ fewerTagsDomReady( () => {
 
 	FTtaxonomyElement.addEventListener( 'change', ( event ) => {
 		const targetTaxonomy = event.target.value;
-		fewerTagsGetAllTerms( targetTaxonomy ).then( ( terms ) => {
+		Promise.all( [ fewerTagsGetAllTerms( targetTaxonomy ), FTtermsReady ] ).then( ( [ terms ] ) => {
 			FTterms = terms;
+			FTtermsTaxonomy = targetTaxonomy;
+			if ( document.body.classList.contains( 'modal-open' ) ) {
+				fewerTagsExcludeSourceTerm();
+			}
 			FTchoices.setChoices( FTterms, 'value', 'label', true );
 			document.getElementById( 'fewer-tags-target-term-label' ).textContent = 'Target ' + targetTaxonomy;
 			document.getElementById( 'fewer-tags-target-taxonomy-slug' ).value = targetTaxonomy;
@@ -431,17 +457,21 @@ fewerTagsDomReady( () => {
 
 			document.getElementById( 'fewer-tags-source-term-id' ).value = termID;
 			document.getElementById( 'fewer-tags-source-term-name' ).value = termName;
-			// If we want to merge a term with another,
-			// then we need to remove the option in the dropdown
-			// because we obviously can't merge it with itself.
-			// The option is backed up, so we can add it again
-			// when the modal closes (see separate MutationObserver).
-			FTbackup = fewerTagsGetObjectByValue( FTterms, termID );
-			FTterms = fewerTagsRemoveObjectByValue( FTterms, termID );
-			FTchoices.setChoices( FTterms, 'value', 'label', true );
 
-			// Otherwise the old value will show up in the dropdown placeholder, super annoying.
-			document.querySelector( '.choices.terms .choices__item' ).innerText = '';
+			// The terms may still be loading. Fill the dropdown once they are, if the modal is still open.
+			FTtermsReady.then( () => {
+				if ( ! document.body.classList.contains( 'modal-open' ) ) {
+					return;
+				}
+				fewerTagsExcludeSourceTerm();
+				FTchoices.setChoices( FTterms, 'value', 'label', true );
+
+				// Otherwise the old value will show up in the dropdown placeholder, super annoying.
+				const placeholder = document.querySelector( '.choices.terms .choices__item' );
+				if ( placeholder ) {
+					placeholder.innerText = '';
+				}
+			} );
 
 			if ( fewerTags.defaultTermId && parseInt( termID ) === fewerTags.defaultTermId ) {
 				document.getElementById( 'fewer-tags-note' ).style.display = '';
@@ -485,14 +515,22 @@ fewerTagsDomReady( () => {
 					return;
 				}
 
-				// Remove the option from the list of terms and from the backup, as it must not exist there in case we want to merge more terms and should not be added back to the list.
-				FTbackup = {};
-				FTterms = fewerTagsRemoveObjectByValue( FTterms, response.data.source_id );
-
-				// Hide the row from the table.
 				const sourceRow = document.getElementById( `tag-${ parseInt( response.data.source_id ) }` );
-				if ( sourceRow ) {
-					sourceRow.style.display = 'none';
+				if ( response.data.source_deleted ) {
+					// Remove the option from the list of terms and from the backup, as it must not exist there in case we want to merge more terms and should not be added back to the list.
+					FTbackup = null;
+					FTterms = fewerTagsRemoveObjectByValue( FTterms, response.data.source_id );
+
+					// Hide the row from the table.
+					if ( sourceRow ) {
+						sourceRow.style.display = 'none';
+					}
+				} else {
+					// A default term is kept, but its content has moved to the target.
+					const sourceCount = sourceRow ? sourceRow.querySelector( 'td.column-posts a' ) : null;
+					if ( sourceCount ) {
+						sourceCount.textContent = '0';
+					}
 				}
 
 				document.getElementById( 'ajax-response' )
@@ -534,8 +572,12 @@ const fewerTagsBodyObserver = new MutationObserver( ( mutations ) => {
 			if ( fewerTagsModalWasOpen !== currentState ) {
 				fewerTagsModalWasOpen = currentState;
 				if ( ! currentState ) {
-					// The modal was closed, so we can restore the removed option from the backup.
-					FTterms.push( FTbackup );
+					// The modal was closed, so we can restore the removed option from the backup,
+					// but only into the list of the taxonomy it came from, and only once.
+					if ( FTbackup && FTbackup.taxonomy === FTtermsTaxonomy && ! fewerTagsGetObjectByValue( FTterms, FTbackup.term.value ) ) {
+						FTterms.push( FTbackup.term );
+					}
+					FTbackup = null;
 				}
 			}
 		}

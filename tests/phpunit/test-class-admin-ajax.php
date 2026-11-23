@@ -124,6 +124,7 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 		$response = $this->merge( $source, 'post_tag', $target, 'post_tag' );
 
 		$this->assertTrue( $response['success'] );
+		$this->assertTrue( $response['data']['source_deleted'] );
 		$this->assertSame( 1, $response['data']['target_count'] );
 		$this->assertNull( get_term( $source, 'post_tag' ) );
 		$this->assertTrue( has_term( $target, 'post_tag', $post_id ) );
@@ -158,6 +159,7 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 			$response = $this->merge( $source, $taxonomy, $target, $taxonomy );
 
 			$this->assertTrue( $response['success'] );
+			$this->assertFalse( $response['data']['source_deleted'] );
 			$this->assertFalse( has_term( $source, $taxonomy, $post_id ) );
 			$this->assertTrue( has_term( $target, $taxonomy, $post_id ) );
 			$this->assertInstanceOf( \WP_Term::class, get_term( $source, $taxonomy ) );
@@ -167,6 +169,32 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 				unregister_taxonomy( $taxonomy );
 			}
 		}
+	}
+
+	/**
+	 * A kept default term still collects new content, so its archive must not be redirected.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_merge_default_term_creates_no_redirect() {
+		require_once dirname( __DIR__ ) . '/fixtures/class-redirection-item-stub.php';
+		class_alias( Redirection_Item_Stub::class, 'Red_Item' );
+		define( 'REDIRECTION_DB_VERSION', 'test' );
+		Option::get_instance()->set( 'redirection_group', 1 );
+
+		$source  = (int) get_option( 'default_category' );
+		$target  = self::factory()->category->create();
+		$post_id = self::factory()->post->create();
+		wp_set_object_terms( $post_id, [ $source ], 'category' );
+
+		$response = $this->merge( $source, 'category', $target, 'category' );
+
+		$this->assertTrue( $response['success'] );
+		$this->assertFalse( $response['data']['source_deleted'] );
+		$this->assertInstanceOf( \WP_Term::class, get_term( $source, 'category' ) );
+		$this->assertSame( [], Redirection_Item_Stub::$redirect );
+		$this->assertStringContainsString( 'kept and not redirected', $response['data']['msg'] );
 	}
 
 	/**

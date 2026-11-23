@@ -334,13 +334,26 @@ class Admin_Ajax {
 		\remove_action( 'delete_term', [ $this, 'redirect_term_on_deletion' ], 10 );
 		\remove_action( 'pre_delete_term', [ $this, 'pre_delete_term' ], 10 );
 
-		\wp_delete_term( $source_term_id, $source_taxonomy );
+		// Returns true when deleted, 0 for a taxonomy's default term (which is kept), false or a WP_Error on failure.
+		$deleted = \wp_delete_term( $source_term_id, $source_taxonomy );
+		if ( \is_wp_error( $deleted ) || false === $deleted ) {
+			\wp_send_json_error(
+				[
+					// translators: %1$s is the source term name, %2$s is the target term name.
+					'msg' => sprintf( __( 'The content of %1$s was moved to %2$s, but %1$s could not be deleted. No redirect was created.', 'fewer-tags' ), $source_term->name, $target_term->name ),
+				]
+			);
+		}
+		$source_deleted = true === $deleted;
 
-		// Deleting an ancestor reparents its descendants and can change the target archive URL.
-		$target_link = \get_term_link( $target_term_id, $target_taxonomy );
-		if ( ! \is_wp_error( $target_link ) ) {
-			$redirects = new Redirects();
-			$redirects->create_redirect( $source_url, $this->make_relative_url( $target_link ) );
+		// Only redirect a deleted term: a kept default term still has an archive that receives new content.
+		if ( $source_deleted ) {
+			// Deleting an ancestor reparents its descendants and can change the target archive URL.
+			$target_link = \get_term_link( $target_term_id, $target_taxonomy );
+			if ( ! \is_wp_error( $target_link ) ) {
+				$redirects = new Redirects();
+				$redirects->create_redirect( $source_url, $this->make_relative_url( $target_link ) );
+			}
 		}
 
 		// We're grabbing this again after we've moved the new posts into the term, so we get the correct count.
@@ -356,12 +369,17 @@ class Admin_Ajax {
 			// translators: %1$s is the source tag name, %2$s is the target tag name, %3$s is the source taxonomy, %4$s is the target taxonomy.
 			$msg = sprintf( \esc_html__( '%1$s (%3$s) merged into %2$s (%4$s)!', 'fewer-tags' ), '<strong>' . \esc_html( $source_term->name ) . '</strong>', '<strong>' . \esc_html( $target_term->name ) . '</strong>', \esc_html( $source_taxonomy ), \esc_html( $target_taxonomy ) );
 		}
+		if ( ! $source_deleted ) {
+			// translators: %s is the source term name.
+			$msg .= ' ' . sprintf( \esc_html__( '%s is the default term, so it was kept and not redirected.', 'fewer-tags' ), '<strong>' . \esc_html( $source_term->name ) . '</strong>' );
+		}
 		\wp_send_json_success(
 			[
-				'source_id'    => $source_term_id,
-				'target_id'    => $target_term_id,
-				'target_count' => (int) $target_term->count,
-				'msg'          => $msg,
+				'source_id'      => $source_term_id,
+				'source_deleted' => $source_deleted,
+				'target_id'      => $target_term_id,
+				'target_count'   => (int) $target_term->count,
+				'msg'            => $msg,
 			]
 		);
 	}

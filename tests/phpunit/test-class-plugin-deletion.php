@@ -81,6 +81,10 @@ class Plugin_Deletion_Test extends \WP_UnitTestCase {
 			$this->assertNotFalse( has_filter( 'manage_edit-post_tag_columns' ) );
 			$this->assertNotFalse( has_filter( 'manage_post_tag_custom_column' ) );
 			$this->assertNotFalse( has_filter( 'post_tag_row_actions' ) );
+
+			// The Merge action waits for admin_init, which admin-ajax.php also fires.
+			$this->assertSame( 10, has_action( 'admin_init', [ $plugin, 'register_merge_action_filters' ] ) );
+			$plugin->register_merge_action_filters();
 			$this->assertSame( 10, has_filter( 'tag_row_actions', [ $plugin, 'add_merge_action' ] ) );
 			$this->assertSame( 10, has_filter( 'category_row_actions', [ $plugin, 'add_merge_action' ] ) );
 
@@ -89,6 +93,27 @@ class Plugin_Deletion_Test extends \WP_UnitTestCase {
 			$this->assertFalse( has_action( 'admin_footer', [ $plugin, 'output_modal' ] ) );
 		} finally {
 			remove_filter( 'wp_doing_ajax', '__return_true' );
+			set_current_screen( 'front' );
+		}
+	}
+
+	/**
+	 * Taxonomies registered after the plugin's init callback still get the Merge action.
+	 */
+	public function test_merge_action_for_taxonomy_registered_after_init() {
+		set_current_screen( 'edit-post_tag' );
+
+		try {
+			$plugin = new Plugin();
+			$plugin->init();
+
+			register_taxonomy( 'late_genre', 'post', [ 'public' => true ] );
+			$this->assertFalse( has_filter( 'late_genre_row_actions', [ $plugin, 'add_merge_action' ] ) );
+
+			$plugin->register_merge_action_filters();
+			$this->assertSame( 10, has_filter( 'late_genre_row_actions', [ $plugin, 'add_merge_action' ] ) );
+		} finally {
+			unregister_taxonomy( 'late_genre' );
 			set_current_screen( 'front' );
 		}
 	}
