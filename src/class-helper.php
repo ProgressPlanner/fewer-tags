@@ -11,6 +11,24 @@ namespace FewerTags;
  * FewerTags Helper Class
  */
 class Helper {
+	/**
+	 * Gets the protected default term using WordPress's taxonomy-specific option.
+	 *
+	 * @param string $taxonomy The taxonomy name.
+	 * @return int The default term ID, or zero when there is no default.
+	 */
+	public static function get_default_term_id( $taxonomy ) {
+		if ( 'category' === $taxonomy ) {
+			return (int) \get_option( 'default_category', 0 );
+		}
+
+		$taxonomy_object = \get_taxonomy( $taxonomy );
+		if ( ! $taxonomy_object || empty( $taxonomy_object->default_term ) ) {
+			return 0;
+		}
+
+		return (int) \get_option( 'default_term_' . $taxonomy, 0 );
+	}
 
 	/**
 	 * Get a redirect notice.

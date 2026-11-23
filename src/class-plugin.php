@@ -45,8 +45,9 @@ class Plugin {
 		self::$min_posts_count = (int) ( Option::get_instance()->get( 'min_posts_count' ) ?? 10 );
 
 		if ( is_admin() ) {
+			// Bulk deletion runs in a normal admin request, so always register deletion hooks.
+			new Admin_Ajax();
 			if ( \wp_doing_ajax() ) {
-				new Admin_Ajax();
 				return;
 			}
 
@@ -255,7 +256,7 @@ class Plugin {
 					'restAPInonce'    => \wp_create_nonce( 'wp_rest' ),
 					'taxonomiesUrl'   => \add_query_arg( 'context', 'edit', \rest_url( 'wp/v2/taxonomies' ) ),
 					'termUrls'        => $term_urls,
-					'defaultTermId'   => (int) \get_option( 'default_' . $taxonomy, 0 ),
+					'defaultTermId'   => Helper::get_default_term_id( $taxonomy ),
 				]
 			),
 			'before'
@@ -279,7 +280,7 @@ class Plugin {
 			<form id="fewer-tags-merge-form">
 				<?php // translators: %1$s is the taxonomy of the terms we're merging. ?>
 				<h3><?php printf( \esc_html__( 'Merge %1$s', 'fewer-tags' ), \esc_html( strtolower( $taxonomy->labels->name ) ) ); ?></h3>
-				<div id="fewer-tags-note"><p><?php \esc_html_e( 'If you merge the Uncategorized category into another, we will add the posts to the other category and remove them from Uncategorized. Unfortunately, the Uncategorized category cannot be deleted.', 'fewer-tags' ); ?></p></div>
+				<div id="fewer-tags-note"><p><?php \esc_html_e( 'If you merge a default term into another, we will add the posts to the target term and remove them from the default term. The default term itself cannot be deleted.', 'fewer-tags' ); ?></p></div>
 				<input type="hidden" name="nonce" id="fewer-tags-merge-terms-nonce" value="<?php echo \esc_attr( \wp_create_nonce( 'fewer_tags_merge_terms' ) ); ?>" />
 				<input type="hidden" name="source_id" id="fewer-tags-source-term-id" value="" />
 				<input type="hidden" name="source_taxonomy" id="fewer-tags-taxonomy" value="<?php echo \esc_attr( $screen->taxonomy ); ?>" />

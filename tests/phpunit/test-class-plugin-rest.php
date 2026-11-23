@@ -14,6 +14,36 @@ use FewerTags\Plugin;
  */
 class Plugin_Rest_Test extends \WP_UnitTestCase {
 	/**
+	 * The merge dialog identifies a custom taxonomy's protected default term.
+	 */
+	public function test_enqueue_custom_default_term() {
+		register_taxonomy(
+			'book_topic',
+			'post',
+			[
+				'public'       => true,
+				'default_term' => [ 'name' => 'Default topic' ],
+			]
+		);
+		set_current_screen( 'edit-book_topic' );
+		wp_deregister_script( 'fewer-tags' );
+
+		try {
+			$plugin = new Plugin();
+			$plugin->enqueue_scripts();
+			$before = wp_scripts()->get_data( 'fewer-tags', 'before' );
+			$config = json_decode( substr( end( $before ), strlen( 'const fewerTags = ' ) ), true );
+
+			$this->assertGreaterThan( 0, $config['defaultTermId'] );
+			$this->assertSame( (int) get_option( 'default_term_book_topic' ), $config['defaultTermId'] );
+		} finally {
+			unregister_taxonomy( 'book_topic' );
+			wp_deregister_script( 'fewer-tags' );
+			set_current_screen( 'front' );
+		}
+	}
+
+	/**
 	 * The merge UI uses WordPress URLs for subdirectory sites and both permalink modes.
 	 *
 	 * @dataProvider data_permalink_structures

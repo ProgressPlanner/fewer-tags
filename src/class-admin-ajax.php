@@ -24,7 +24,7 @@ class Admin_Ajax {
 	public function __construct() {
 		$this->options = Option::get_instance();
 
-		// While our code here isn't AJAX, these actions run in AJAX context.
+		// Capture both individual AJAX deletions and normal admin bulk deletions.
 		\add_action( 'pre_delete_term', [ $this, 'pre_delete_term' ], 10, 2 );
 		\add_action( 'delete_term', [ $this, 'redirect_term_on_deletion' ], 10, 4 );
 
@@ -300,7 +300,6 @@ class Admin_Ajax {
 			\wp_send_json_error( [ 'msg' => __( 'We could not find the terms to merge.', 'fewer-tags' ) ] );
 		}
 		$source_url = $this->make_relative_url( $source_link );
-		$target_url = $this->make_relative_url( $target_link );
 
 		// Terms can only move between taxonomies that are registered for at least one shared object type.
 		if ( ! array_intersect( (array) $source_taxonomy_object->object_type, (array) $target_taxonomy_object->object_type ) ) {
@@ -308,7 +307,7 @@ class Admin_Ajax {
 		}
 
 		// The default term of a taxonomy cannot be deleted, so we remove it from each post manually after merging.
-		$default_taxonomy_term_id = (int) \get_option( 'default_' . $source_taxonomy, 0 );
+		$default_taxonomy_term_id = Helper::get_default_term_id( $source_taxonomy );
 
 		// Validate every object before assigning terms or deleting the source.
 		$posts = \get_objects_in_term( $source_term_id, $source_taxonomy );
@@ -337,8 +336,12 @@ class Admin_Ajax {
 
 		\wp_delete_term( $source_term_id, $source_taxonomy );
 
-		$redirects = new Redirects();
-		$redirects->create_redirect( $source_url, $target_url );
+		// Deleting an ancestor reparents its descendants and can change the target archive URL.
+		$target_link = \get_term_link( $target_term_id, $target_taxonomy );
+		if ( ! \is_wp_error( $target_link ) ) {
+			$redirects = new Redirects();
+			$redirects->create_redirect( $source_url, $this->make_relative_url( $target_link ) );
+		}
 
 		// We're grabbing this again after we've moved the new posts into the term, so we get the correct count.
 		\clean_term_cache( $target_term_id, $target_taxonomy );

@@ -130,6 +130,111 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 	}
 
 	/**
+	 * Merging a default term moves its posts while retaining the protected term.
+	 *
+	 * @dataProvider data_default_taxonomies
+	 *
+	 * @param string $taxonomy The taxonomy to merge in.
+	 */
+	public function test_merge_default_term( $taxonomy ) {
+		if ( 'category' !== $taxonomy ) {
+			register_taxonomy(
+				$taxonomy,
+				'post',
+				[
+					'public'       => true,
+					'default_term' => [ 'name' => 'Default topic' ],
+				]
+			);
+		}
+
+		try {
+			$option  = 'category' === $taxonomy ? 'default_category' : 'default_term_' . $taxonomy;
+			$source  = (int) get_option( $option );
+			$target  = self::factory()->term->create( [ 'taxonomy' => $taxonomy ] );
+			$post_id = self::factory()->post->create();
+			wp_set_object_terms( $post_id, [ $source ], $taxonomy );
+
+			$response = $this->merge( $source, $taxonomy, $target, $taxonomy );
+
+			$this->assertTrue( $response['success'] );
+			$this->assertFalse( has_term( $source, $taxonomy, $post_id ) );
+			$this->assertTrue( has_term( $target, $taxonomy, $post_id ) );
+			$this->assertInstanceOf( \WP_Term::class, get_term( $source, $taxonomy ) );
+			$this->assertSame( $source, (int) get_option( $option ) );
+		} finally {
+			if ( 'category' !== $taxonomy ) {
+				unregister_taxonomy( $taxonomy );
+			}
+		}
+	}
+
+	/**
+	 * Built-in and custom default terms use different WordPress options.
+	 *
+	 * @return array[]
+	 */
+	public function data_default_taxonomies() {
+		return [ [ 'category' ], [ 'book_topic' ] ];
+	}
+
+	/**
+	 * Redirects to descendants use their URL after WordPress reparents them.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 * @dataProvider data_descendant_merges
+	 *
+	 * @param string $structure The permalink structure.
+	 * @param bool   $nested    Whether to merge into a grandchild.
+	 */
+	public function test_merge_redirect_to_descendant( $structure, $nested ) {
+		require_once dirname( __DIR__ ) . '/fixtures/class-redirection-item-stub.php';
+		class_alias( Redirection_Item_Stub::class, 'Red_Item' );
+		define( 'REDIRECTION_DB_VERSION', 'test' );
+		Option::get_instance()->set( 'redirection_group', 1 );
+
+		$this->set_permalink_structure( $structure );
+		create_initial_taxonomies();
+		$source = self::factory()->category->create( [ 'slug' => 'source' ] );
+		$child  = self::factory()->category->create(
+			[
+				'slug'   => 'child',
+				'parent' => $source,
+			]
+		);
+		$target = $nested ? self::factory()->category->create(
+			[
+				'slug'   => 'grandchild',
+				'parent' => $child,
+			]
+		) : $child;
+		$url    = wp_make_link_relative( get_term_link( $source, 'category' ) );
+
+		$response = $this->merge( $source, 'category', $target, 'category' );
+
+		$this->assertTrue( $response['success'] );
+		$this->assertNull( get_term( $source, 'category' ) );
+		$this->assertSame( $url, Redirection_Item_Stub::$redirect['url'] );
+		$this->assertSame( wp_make_link_relative( get_term_link( $target, 'category' ) ), Redirection_Item_Stub::$redirect['action_data']['url'] );
+		$this->assertSame( 301, Redirection_Item_Stub::$redirect['action_code'] );
+	}
+
+	/**
+	 * Both permalink modes and descendants at different depths are supported.
+	 *
+	 * @return array[]
+	 */
+	public function data_descendant_merges() {
+		return [
+			[ '/%postname%/', false ],
+			[ '/%postname%/', true ],
+			[ '', false ],
+			[ '', true ],
+		];
+	}
+
+	/**
 	 * Taxonomies without a public admin UI, such as nav_menu and post_format, cannot be merged.
 	 *
 	 * @dataProvider data_unsupported_taxonomies
