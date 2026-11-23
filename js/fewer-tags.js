@@ -61,27 +61,27 @@ function fewerTagsDomReady( callback ) {
 }
 
 /**
- * A helper to allow listening for element removals,
- * and run a callback when that happens.
+ * Run a callback when a term row is deleted from the list table.
  *
- * @param {Element[]} elements The elements to observe.
- * @param {Function}  callback The callback to run when the element is removed.
+ * Watches the table body itself, so rows added after page load (Add New Tag) are covered too.
+ * A row that is replaced by a row with the same ID, as Quick Edit does, doesn't count as deleted.
+ *
+ * @param {Function} callback The callback to run after a term row is removed.
  */
-const fewerTagsObserveElementRemoval = ( elements, callback ) => {
+const fewerTagsObserveRowRemoval = ( callback ) => {
 	const theList = document.getElementById( 'the-list' );
 	if ( ! theList ) {
 		return;
 	}
-	elements.forEach( ( element ) => {
-		let inDom = theList.contains( element );
-		const observer = new MutationObserver( () => {
-			if ( ! theList.contains( element ) && inDom ) {
-				inDom = false;
-				callback();
-			}
-		} );
-		observer.observe( theList, { childList: true, subtree: true } );
+	const observer = new MutationObserver( ( mutations ) => {
+		const rowDeleted = mutations.some( ( mutation ) => Array.from( mutation.removedNodes ).some(
+			( node ) => node.nodeType === Node.ELEMENT_NODE && /^tag-\d+$/.test( node.id ) && ! document.getElementById( node.id )
+		) );
+		if ( rowDeleted ) {
+			callback();
+		}
 	} );
+	observer.observe( theList, { childList: true } );
 };
 
 /**
@@ -441,7 +441,7 @@ fewerTagsDomReady( () => {
 		} );
 	} );
 
-	fewerTagsObserveElementRemoval( document.querySelectorAll( '#the-list tr' ), () => {
+	fewerTagsObserveRowRemoval( () => {
 		fewerTagsAjaxRequest( {
 			url: fewerTags.ajaxUrl,
 			data: {
