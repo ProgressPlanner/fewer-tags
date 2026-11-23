@@ -176,6 +176,20 @@ document.addEventListener( 'click', ( event ) => {
 		return;
 	}
 
+	// WordPress adds the dismiss button and hides the notice; remember the dismissal for this user.
+	const toolNoticeDismiss = event.target.closest( '.fewer-tags-redirect-tool-notice .notice-dismiss' );
+	if ( toolNoticeDismiss ) {
+		fewerTagsAjaxRequest( {
+			url: fewerTags.ajaxUrl,
+			data: {
+				action: 'fewer_tags_dismiss_redirect_tool_notice',
+				_ajax_nonce: toolNoticeDismiss.closest( '.fewer-tags-redirect-tool-notice' ).getAttribute( 'data-nonce' ),
+			},
+			successAction: () => {},
+		} );
+		return;
+	}
+
 	const dismissButton = event.target.closest( '.fewer-tags-redirect-notice .notice-dismiss' );
 	if ( dismissButton ) {
 		const notice = dismissButton.closest( '.fewer-tags-redirect-notice' );

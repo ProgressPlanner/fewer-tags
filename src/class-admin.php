@@ -13,6 +13,13 @@ namespace FewerTags;
 class Admin {
 
 	/**
+	 * User meta key storing that the user dismissed the "no redirect plugin" notice.
+	 *
+	 * @var string
+	 */
+	const REDIRECT_TOOL_NOTICE_DISMISSED_META_KEY = 'fewer_tags_redirect_tool_notice_dismissed';
+
+	/**
 	 * Register the needed hooks.
 	 *
 	 * @return void
@@ -189,8 +196,42 @@ class Admin {
 		if ( Helper::determine_redirect_tool() !== false ) {
 			return;
 		}
+
+		// Only show the notice to users who can act on it, and only until they dismiss it.
+		$can_install  = \current_user_can( 'install_plugins' );
+		$can_activate = \current_user_can( 'activate_plugins' );
+		if ( ( ! $can_install && ! $can_activate ) || \get_user_meta( \get_current_user_id(), self::REDIRECT_TOOL_NOTICE_DISMISSED_META_KEY, true ) ) {
+			return;
+		}
+
+		// If the Redirection plugin is not installed, link to installing it; if it is, link to activating it.
+		$is_redirection_plugin_installed = isset( \get_plugins()['redirection/redirection.php'] );
+		$redirection_button_url          = '';
+		if ( $is_redirection_plugin_installed && $can_activate ) {
+			$redirection_button_url = \wp_nonce_url(
+				\add_query_arg(
+					[
+						'action' => 'activate',
+						'plugin' => 'redirection/redirection.php',
+					],
+					\admin_url( 'plugins.php' )
+				),
+				'activate-plugin_redirection/redirection.php'
+			);
+		} elseif ( ! $is_redirection_plugin_installed && $can_install ) {
+			$redirection_button_url = \wp_nonce_url(
+				\add_query_arg(
+					[
+						'action' => 'install-plugin',
+						'plugin' => 'redirection',
+					],
+					\admin_url( 'update.php' )
+				),
+				'install-plugin_redirection'
+			);
+		}
 		?>
-		<div class="error">
+		<div class="notice notice-warning is-dismissible fewer-tags-redirect-tool-notice" data-nonce="<?php echo \esc_attr( \wp_create_nonce( 'fewer_tags_dismiss_redirect_tool_notice' ) ); ?>">
 			<p>
 				<strong><?php \esc_html_e( 'Warning:', 'fewer-tags' ); ?></strong>
 				<?php
@@ -202,41 +243,17 @@ class Admin {
 				?>
 			</p>
 			<p>
-			<?php
-			// Figure out if the Redirection plugin is installed.
-			$is_redirection_plugin_installed = isset( \get_plugins()['redirection/redirection.php'] );
-
-			// If the Redirection plugin is not installed, get the link to install it.
-			// If it is installed but not activated, show a link to activate it.
-			$redirection_button_url = $is_redirection_plugin_installed
-				? \wp_nonce_url(
-					\add_query_arg(
-						[
-							'action' => 'activate',
-							'plugin' => 'redirection/redirection.php',
-						],
-						\admin_url( 'plugins.php' )
-					),
-					'activate-plugin_redirection/redirection.php'
-				) : \wp_nonce_url(
-					\add_query_arg(
-						[
-							'action' => 'install-plugin',
-							'plugin' => 'redirection',
-						],
-						\admin_url( 'update.php' )
-					),
-					'install-plugin_redirection'
-				);
-			?>
-			<a class="button" style="margin: 0 10px 0 0;" href="<?php echo \esc_url( $redirection_button_url ); ?>">
-				<?php
-				echo $is_redirection_plugin_installed
-					? \esc_html__( 'Activate Redirection', 'fewer-tags' )
-					: \esc_html__( 'Install Redirection', 'fewer-tags' );
-				?>
-			</a>
-			<a href="https://yoast.com/wordpress/plugins/seo/" target="_blank" rel="noopener noreferrer"><?php \esc_html_e( 'Get Yoast SEO Premium', 'fewer-tags' ); ?></a></p>
+				<?php if ( $redirection_button_url ) : ?>
+				<a class="button" style="margin: 0 10px 0 0;" href="<?php echo \esc_url( $redirection_button_url ); ?>">
+					<?php
+					echo $is_redirection_plugin_installed
+						? \esc_html__( 'Activate Redirection', 'fewer-tags' )
+						: \esc_html__( 'Install Redirection', 'fewer-tags' );
+					?>
+				</a>
+				<?php endif; ?>
+				<a href="https://yoast.com/wordpress/plugins/seo/" target="_blank" rel="noopener noreferrer"><?php \esc_html_e( 'Get Yoast SEO Premium', 'fewer-tags' ); ?></a>
+			</p>
 		</div>
 		<?php
 	}

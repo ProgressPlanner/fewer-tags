@@ -41,4 +41,37 @@ class Redirects_Test extends \WP_UnitTestCase {
 		$this->assertTrue( $redirects->create_redirect_from_slug( 'old-tag', 'post_tag', 'http://example.org:8879/subsite/' ) );
 		$this->assertSame( [], Option::get_instance()->get( 'terms_to_redirect' )['post_tag'] );
 	}
+
+	/**
+	 * Yoast SEO Premium refuses a second redirect for the same origin; that must be
+	 * reported as a failure, so the deleted-term notice stays and can be retried.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_existing_yoast_redirect_is_reported_as_failure() {
+		require_once dirname( __DIR__ ) . '/fixtures/class-wpseo-redirect.php';
+		define( 'WPSEO_PREMIUM_VERSION', 'test' );
+
+		$redirects = new Redirects();
+		$this->assertTrue( $redirects->create_yoast_redirect( '/tag/first/', '/' ) );
+		$this->assertSame( [ '/tag/first/' => '/' ], \WPSEO_Redirect_Option::$saved );
+
+		\WPSEO_Redirect_Option::$saved['/tag/old-tag/'] = '/elsewhere/';
+		Option::get_instance()->set(
+			'terms_to_redirect',
+			[
+				'post_tag' => [
+					'old-tag' => [
+						'name'      => 'Old tag',
+						'permalink' => home_url( '/tag/old-tag/' ),
+					],
+				],
+			]
+		);
+
+		$this->assertFalse( $redirects->create_redirect_from_slug( 'old-tag', 'post_tag', '/' ) );
+		$this->assertSame( '/elsewhere/', \WPSEO_Redirect_Option::$saved['/tag/old-tag/'] );
+		$this->assertArrayHasKey( 'old-tag', Option::get_instance()->get( 'terms_to_redirect' )['post_tag'] );
+	}
 }

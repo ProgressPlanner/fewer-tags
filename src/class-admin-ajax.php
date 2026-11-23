@@ -33,6 +33,7 @@ class Admin_Ajax {
 		\add_action( 'wp_ajax_fewer_tags_merge_terms', [ $this, 'merge_terms' ] );
 		\add_action( 'wp_ajax_fewer_tags_get_just_deleted_term', [ $this, 'get_just_deleted_term' ] );
 		\add_action( 'wp_ajax_fewer_tags_dismiss_notice', [ $this, 'dismiss_notice' ] );
+		\add_action( 'wp_ajax_fewer_tags_dismiss_redirect_tool_notice', [ $this, 'dismiss_redirect_tool_notice' ] );
 	}
 
 	/**
@@ -187,6 +188,19 @@ class Admin_Ajax {
 	}
 
 	/**
+	 * Dismiss the "no redirect plugin" notice for the current user.
+	 *
+	 * @return void
+	 */
+	public function dismiss_redirect_tool_notice() {
+		\check_ajax_referer( 'fewer_tags_dismiss_redirect_tool_notice' );
+
+		\update_user_meta( \get_current_user_id(), Admin::REDIRECT_TOOL_NOTICE_DISMISSED_META_KEY, 1 );
+
+		\wp_send_json_success();
+	}
+
+	/**
 	 * Create a redirect.
 	 *
 	 * @return void
@@ -230,10 +244,14 @@ class Admin_Ajax {
 
 		$redirects = new Redirects();
 		if ( ! $redirects->create_redirect_from_slug( $slug, $taxonomy, $target ) ) {
+			$msg = Helper::determine_redirect_tool()
+				// translators: %s is the deleted term's name.
+				? sprintf( __( 'We could not create the redirect for %s. A redirect for this URL may already exist in your redirect plugin.', 'fewer-tags' ), $term['name'] )
+				: __( 'We could not create the redirect. Please make sure the Redirection plugin or Yoast SEO Premium is active.', 'fewer-tags' );
 			\wp_send_json_error(
 				[
 					'slug' => $term['slug'],
-					'msg'  => __( 'We could not create the redirect. Please make sure the Redirection plugin or Yoast SEO Premium is active.', 'fewer-tags' ),
+					'msg'  => $msg,
 				]
 			);
 		}

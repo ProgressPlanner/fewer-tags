@@ -139,9 +139,11 @@ class Redirects {
 	public function create_yoast_redirect( $source_url, $target_url ) {
 		$redirect_option = new \WPSEO_Redirect_Option();
 
-		// Add the redirect to Yoast SEO table.
+		// Add the redirect to Yoast SEO table. add() returns false when a redirect for this origin already exists.
 		$redirect_object = new \WPSEO_Redirect( $source_url, $target_url, 301, 'plain' );
-		$redirect_option->add( $redirect_object );
+		if ( ! $redirect_option->add( $redirect_object ) ) {
+			return false;
+		}
 		$redirect_option->save();
 
 		// Apply the redirect.

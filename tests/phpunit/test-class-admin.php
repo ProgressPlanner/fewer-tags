@@ -248,4 +248,100 @@ class Admin_Test extends \WP_UnitTestCase {
 			'view'   => 'View',
 		];
 	}
+
+	/**
+	 * Render the redirect tool notice for a user with the given role.
+	 *
+	 * @param string $role The user's role.
+	 *
+	 * @return string The notice HTML.
+	 */
+	private function render_redirect_tool_notice_for( $role ) {
+		$user_id = self::factory()->user->create( [ 'role' => $role ] );
+		if ( 'administrator' === $role && is_multisite() ) {
+			grant_super_admin( $user_id );
+		}
+		wp_set_current_user( $user_id );
+		set_current_screen( 'edit-post_tag' );
+
+		ob_start();
+		( new Admin() )->redirect_tool_notice();
+		$output = ob_get_clean();
+
+		set_current_screen( 'front' );
+		return $output;
+	}
+
+	/**
+	 * Administrators see the notice with the install button.
+	 *
+	 * Runs in a separate process: other tests define REDIRECTION_DB_VERSION, which hides the notice.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 * @covers FewerTags\Admin::redirect_tool_notice
+	 */
+	public function test_redirect_tool_notice_for_administrator() {
+		$output = $this->render_redirect_tool_notice_for( 'administrator' );
+
+		$this->assertStringContainsString( 'fewer-tags-redirect-tool-notice', $output );
+		$this->assertStringContainsString( 'is-dismissible', $output );
+		$this->assertStringContainsString( 'Install Redirection', $output );
+	}
+
+	/**
+	 * Users who can't install or activate plugins don't see the notice.
+	 *
+	 * Runs in a separate process: other tests define REDIRECTION_DB_VERSION, which hides the notice.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 * @covers FewerTags\Admin::redirect_tool_notice
+	 */
+	public function test_redirect_tool_notice_hidden_for_editor() {
+		$this->assertSame( '', $this->render_redirect_tool_notice_for( 'editor' ) );
+	}
+
+	/**
+	 * Without install_plugins, the Install button is left out but the notice remains.
+	 *
+	 * Runs in a separate process: other tests define REDIRECTION_DB_VERSION, which hides the notice.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 * @covers FewerTags\Admin::redirect_tool_notice
+	 */
+	public function test_redirect_tool_notice_without_install_capability() {
+		// map_meta_cap also applies to super admins on multisite, unlike user_has_cap.
+		$deny_install = static function ( $caps, $cap ) {
+			return 'install_plugins' === $cap ? [ 'do_not_allow' ] : $caps;
+		};
+		add_filter( 'map_meta_cap', $deny_install, 10, 2 );
+		$output = $this->render_redirect_tool_notice_for( 'administrator' );
+		remove_filter( 'map_meta_cap', $deny_install, 10 );
+
+		$this->assertStringContainsString( 'fewer-tags-redirect-tool-notice', $output );
+		$this->assertStringNotContainsString( 'Install Redirection', $output );
+		$this->assertStringContainsString( 'Get Yoast SEO Premium', $output );
+	}
+
+	/**
+	 * A dismissed notice stays hidden for that user.
+	 *
+	 * Runs in a separate process: other tests define REDIRECTION_DB_VERSION, which hides the notice.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 * @covers FewerTags\Admin::redirect_tool_notice
+	 */
+	public function test_redirect_tool_notice_hidden_after_dismissal() {
+		$dismiss = static function ( $value, $object_id, $meta_key ) {
+			return Admin::REDIRECT_TOOL_NOTICE_DISMISSED_META_KEY === $meta_key ? [ 1 ] : $value;
+		};
+		add_filter( 'get_user_metadata', $dismiss, 10, 3 );
+		$output = $this->render_redirect_tool_notice_for( 'administrator' );
+		remove_filter( 'get_user_metadata', $dismiss, 10 );
+
+		$this->assertSame( '', $output );
+	}
 }

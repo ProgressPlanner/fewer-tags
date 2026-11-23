@@ -198,6 +198,16 @@ class Admin_Ajax_Test extends \WP_Ajax_UnitTestCase {
 	}
 
 	/**
+	 * Dismissing the redirect tool notice is remembered per user.
+	 */
+	public function test_dismiss_redirect_tool_notice() {
+		$response = $this->do_ajax( 'fewer_tags_dismiss_redirect_tool_notice', [] );
+
+		$this->assertTrue( $response['success'] );
+		$this->assertSame( '1', get_user_meta( get_current_user_id(), \FewerTags\Admin::REDIRECT_TOOL_NOTICE_DISMISSED_META_KEY, true ) );
+	}
+
+	/**
 	 * Built-in and custom default terms use different WordPress options.
 	 *
 	 * @return array[]
