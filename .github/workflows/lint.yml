@@ -61,7 +61,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php_version }}
-          ini-values: zend.assertions=1, error_reporting=-1, display_errors=On
+          # display_errors goes to stderr, not stdout: on PHP 8.4 and up the
+          # locked Mockery prints deprecation notices while the autoloader
+          # loads, and on stdout those break the checkstyle XML cs2pr reads.
+          ini-values: zend.assertions=1, error_reporting=-1, display_errors=stderr
           coverage: none
           tools: cs2pr
 
